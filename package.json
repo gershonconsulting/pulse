@@ -1,0 +1,14 @@
+{
+  "name": "pulse-gershoncrm",
+  "version": "2.0.0",
+  "description": "Pulse LinkedIn Message Triage Dashboard — pulse.gershoncrm.com",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

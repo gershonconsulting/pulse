@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse — LinkedIn Message Triage</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230077b5'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold' font-family='system-ui'>P</text></svg>">
+<style>
+  :root {
+    --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca;
+    --orange: #d97706; --orange-bg: #fffbeb; --orange-border: #fde68a;
+    --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
+    --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #0077b5; --accent-dark: #005885;
+    --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: white; padding: 24px 32px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo { width: 44px; height: 44px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--accent); font-size: 22px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .last-scan { font-size: 12px; opacity: 0.7; }
+  .refresh-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-top: 6px; transition: background 0.2s; }
+  .refresh-btn:hover { background: rgba(255,255,255,0.3); }
+
+  /* Main layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); border-left: 4px solid transparent; }
+  .stat-card.red { border-left-color: var(--red); }
+  .stat-card.orange { border-left-color: var(--orange); }
+  .stat-card.green { border-left-color: var(--green); }
+  .stat-card.total { border-left-color: var(--accent); }
+  .stat-number { font-size: 36px; font-weight: 800; }
+  .stat-card.red .stat-number { color: var(--red); }
+  .stat-card.orange .stat-number { color: var(--orange); }
+  .stat-card.green .stat-number { color: var(--green); }
+  .stat-card.total .stat-number { color: var(--accent); }
+  .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+  .stat-desc { font-size: 11px; color: var(--muted); margin-top: 2px; opacity: 0.7; }
+
+  /* Toolbar */
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-tabs { display: flex; gap: 4px; background: var(--card); border-radius: 10px; padding: 4px; box-shadow: var(--shadow); }
+  .filter-tab { padding: 8px 16px; border-radius: 8px; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); transition: all 0.2s; }
+  .filter-tab.active { background: var(--accent); color: white; }
+  .filter-tab:hover:not(.active) { background: var(--bg); color: var(--text); }
+  .filter-tab .badge { display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+  .filter-tab.active .badge { background: rgba(255,255,255,0.25); color: white; }
+  .filter-tab:not(.active) .badge { background: var(--bg); }
+
+  .search-box { flex: 1; min-width: 200px; }
+  .search-box input { width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }
+  .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,119,181,0.15); }
+
+  .sort-select { padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; background: var(--card); box-shadow: var(--shadow); cursor: pointer; }
+
+  /* Message list */
+  .message-list { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .message-item { display: flex; align-items: flex-start; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: default; }
+  .message-item:last-child { border-bottom: none; }
+  .message-item:hover { background: #f8fafc; }
+
+  .msg-status { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .msg-status.red { background: var(--red); box-shadow: 0 0 8px rgba(220,38,38,0.3); }
+  .msg-status.orange { background: var(--orange); box-shadow: 0 0 8px rgba(217,119,6,0.3); }
+  .msg-status.green { background: var(--green); box-shadow: 0 0 8px rgba(22,163,74,0.3); }
+
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .msg-snippet { font-size: 13px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
+  .msg-meta { display: flex; gap: 12px; align-items: center; margin-top: 6px; }
+  .msg-tag { font-size: 11px; padding: 2px 10px; border-radius: 6px; font-weight: 600; }
+  .msg-tag.red { background: var(--red-bg); color: var(--red); }
+  .msg-tag.orange { background: var(--orange-bg); color: var(--orange); }
+  .msg-tag.green { background: var(--green-bg); color: var(--green); }
+  .msg-reason { font-size: 11px; color: var(--muted); }
+  .msg-date { font-size: 11px; color: var(--muted); opacity: 0.7; }
+
+  .msg-actions { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
+  .msg-action-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .msg-action-btn:hover { background: var(--bg); }
+  .msg-action-btn.active-red { background: var(--red-bg); border-color: var(--red); }
+  .msg-action-btn.active-orange { background: var(--orange-bg); border-color: var(--orange); }
+  .msg-action-btn.active-green { background: var(--green-bg); border-color: var(--green); }
+
+  .msg-profile-link { font-size: 11px; color: var(--accent); text-decoration: none; }
+  .msg-profile-link:hover { text-decoration: underline; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+  .empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+  /* Scan history */
+  .scan-history { margin-top: 24px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; }
+  .scan-history h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  .scan-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .scan-row:last-child { border-bottom: none; }
+  .scan-counts { display: flex; gap: 10px; }
+  .scan-count { font-weight: 600; }
+  .scan-count.red { color: var(--red); }
+  .scan-count.orange { color: var(--orange); }
+  .scan-count.green { color: var(--green); }
+  .scan-time { color: var(--muted); font-size: 12px; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 16px; }
+    .header { padding: 16px; }
+    .toolbar { flex-direction: column; }
+    .search-box { min-width: 100%; }
+    .msg-snippet { max-width: 250px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">P</div>
+    <div>
+      <h1>Pulse</h1>
+      <div class="subtitle">LinkedIn Message Triage — Gershon Consulting</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="last-scan" id="last-scan">Loading...</div>
+    <button class="refresh-btn" onclick="loadData()">Refresh</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Stats Cards -->
+  <div class="stats-row">
+    <div class="stat-card red">
+      <div class="stat-number" id="stat-red">—</div>
+      <div class="stat-label">Follow-up needed</div>
+      <div class="stat-desc">Questions, interest, action required</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-number" id="stat-orange">—</div>
+      <div class="stat-label">No action needed</div>
+      <div class="stat-desc">Declines, acknowledgments</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-number" id="stat-green">—</div>
+      <div class="stat-label">You sent last</div>
+      <div class="stat-desc">Awaiting their reply</div>
+    </div>
+    <div class="stat-card total">
+      <div class="stat-number" id="stat-total">—</div>
+      <div class="stat-label">Total conversations</div>
+      <div class="stat-desc">All classified messages</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All <span class="badge" id="badge-all"></span></button>
+      <button class="filter-tab" data-filter="Red">Red <span class="badge" id="badge-red"></span></button>
+      <button class="filter-tab" data-filter="Orange">Orange <span class="badge" id="badge-orange"></span></button>
+      <button class="filter-tab" data-filter="Green">Green <span class="badge" id="badge-green"></span></button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Search by name or message...">
+    </div>
+    <select class="sort-select" id="sort-select">
+      <option value="priority">Sort by priority</option>
+      <option value="name">Sort by name</option>
+      <option value="date">Sort by date</option>
+    </select>
+  </div>
+
+  <!-- Message List -->
+  <div class="message-list" id="message-list">
+    <div class="loading">Loading messages...</div>
+  </div>
+
+  <!-- Scan History -->
+  <div class="scan-history" id="scan-history" style="display:none;">
+    <h3>Recent Scans</h3>
+    <div id="scan-rows"></div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let allMessages = [];
+  let currentFilter = "all";
+  let currentSort = "priority";
+  let searchQuery = "";
+
+  // Load data from API
+  async function loadData() {
+    try {
+      const params = new URLSearchParams();
+      if (currentFilter !== "all") params.set("status", currentFilter);
+      if (currentSort !== "priority") params.set("sort", currentSort);
+      if (searchQuery) params.set("search", searchQuery);
+
+      const res = await fetch(`${API_BASE}/api/messages?${params}`);
+      const data = await res.json();
+
+      allMessages = data.messages;
+
+      // Update stats
+      document.getElementById("stat-red").textContent = data.stats.red;
+      document.getElementById("stat-orange").textContent = data.stats.orange;
+      document.getElementById("stat-green").textContent = data.stats.green;
+      document.getElementById("stat-total").textContent = data.stats.total;
+
+      // Update badges
+      document.getElementById("badge-all").textContent = data.stats.total;
+      document.getElementById("badge-red").textContent = data.stats.red;
+      document.getElementById("badge-orange").textContent = data.stats.orange;
+      document.getElementById("badge-green").textContent = data.stats.green;
+
+      // Update last scan info
+      if (data.lastScan) {
+        const scanDate = new Date(data.lastScan.timestamp);
+        document.getElementById("last-scan").textContent =
+          `Last scan: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()} — ${data.lastScan.count} conversations`;
+      } else {
+        document.getElementById("last-scan").textContent = "No scans yet — use the Chrome extension to collect messages";
+      }
+
+      renderMessages(data.messages);
+      loadScanHistory();
+    } catch (err) {
+      console.error("Failed to load data:", err);
+      document.getElementById("message-list").innerHTML =
+        '<div class="empty-state"><h3>Cannot reach Pulse API</h3><p>Make sure the server is running.</p></div>';
+    }
+  }
+
+  // Render message list
+  function renderMessages(messages) {
+    const list = document.getElementById("message-list");
+
+    if (!messages || messages.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <h3>No messages yet</h3>
+          <p>Click "Scan All Messages" in the Pulse Chrome extension. Results will appear here automatically.</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = messages.map((m) => {
+      const s = m.status.toLowerCase();
+      const profileLink = m.profileUrl
+        ? `<a href="${escapeAttr(m.profileUrl)}" target="_blank" class="msg-profile-link">View profile</a>`
+        : "";
+      const lastSender = m.lastSender === "you" ? "You" : m.name.split(" ")[0];
+
+      return `
+        <div class="message-item" data-name="${escapeAttr(m.name)}">
+          <div class="msg-status ${s}"></div>
+          <div class="msg-body">
+            <div class="msg-name">${esc(m.name)}</div>
+            <div class="msg-snippet">${esc(m.snippet || "(no preview)")}</div>
+            <div class="msg-meta">
+              <span class="msg-tag ${s}">${m.status}</span>
+              <span class="msg-reason">${esc(m.reason || "")}</span>
+              <span class="msg-date">Last: ${esc(lastSender)} · ${esc(m.date || "")}</span>
+              ${profileLink}
+            </div>
+          </div>
+          <div class="msg-actions">
+            <button class="msg-action-btn ${m.status === 'Red' ? 'active-red' : ''}" onclick="setStatus('${escapeAttr(m.name)}','Red')" title="Mark as Red (follow-up needed)">R</button>
+            <button class="msg-action-btn ${m.status === 'Orange' ? 'active-orange' : ''}" onclick="setStatus('${escapeAttr(m.name)}','Orange')" title="Mark as Orange (no action)">O</button>
+            <button class="msg-action-btn ${m.status === 'Green' ? 'active-green' : ''}" onclick="setStatus('${escapeAttr(m.name)}','Green')" title="Mark as Green (you sent last)">G</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // Manual status override
+  async function setStatus(name, status) {
+    try {
+      await fetch(`${API_BASE}/api/messages/${encodeURIComponent(name)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      loadData();
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  }
+
+  // Load scan history
+  async function loadScanHistory() {
+    try {
+      const res = await fetch(`${API_BASE}/api/messages/stats`);
+      const data = await res.json();
+
+      if (data.scans && data.scans.length > 0) {
+        document.getElementById("scan-history").style.display = "block";
+        document.getElementById("scan-rows").innerHTML = data.scans.map((s) => {
+          const d = new Date(s.timestamp);
+          return `
+            <div class="scan-row">
+              <span class="scan-time">${d.toLocaleDateString()} ${d.toLocaleTimeString()}</span>
+              <div class="scan-counts">
+                <span class="scan-count red">${s.red} red</span>
+                <span class="scan-count orange">${s.orange} orange</span>
+                <span class="scan-count green">${s.green} green</span>
+                <span style="color:var(--muted)">(${s.count} total)</span>
+              </div>
+            </div>`;
+        }).join("");
+      }
+    } catch (err) {
+      // Scan history is optional
+    }
+  }
+
+  // Escape helpers
+  function esc(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
+  }
+
+  // Filter tabs
+  document.getElementById("filter-tabs").addEventListener("click", (e) => {
+    const tab = e.target.closest(".filter-tab");
+    if (!tab) return;
+    document.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    currentFilter = tab.dataset.filter;
+    loadData();
+  });
+
+  // Search
+  let searchTimeout;
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchQuery = e.target.value.trim();
+      loadData();
+    }, 300);
+  });
+
+  // Sort
+  document.getElementById("sort-select").addEventListener("change", (e) => {
+    currentSort = e.target.value;
+    loadData();
+  });
+
+  // Initial load
+  loadData();
+
+  // Auto-refresh every 30 seconds
+  setInterval(loadData, 30000);
+</script>
+
+</body>
+</html>

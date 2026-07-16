@@ -1,0 +1,44 @@
+PULSE LINKEDIN COLLECTOR - Setup Guide
+=======================================
+
+1. INSTALL THE EXTENSION
+   - Open Chrome and go to: chrome://extensions/
+   - Enable "Developer mode" (toggle in top-right)
+   - Click "Load unpacked"
+   - Select this folder: linkedin-pulse-extension
+   - The Pulse icon (blue P) appears in your toolbar
+
+2. CONFIGURE AIRTABLE
+   - Go to https://airtable.com/create/tokens to create a Personal Access Token
+     - Scopes needed: data.records:read, data.records:write, schema.bases:read
+     - Add access to your workspace
+   - Create a new base in Airtable called "Pulse LinkedIn"
+   - In that base, create a table called "LinkedIn Messages" with these fields:
+     * Name (Single line text) - PRIMARY FIELD
+     * Last Message (Long text)
+     * Last Sender (Single line text)
+     * Date (Single line text)
+     * Unread Count (Number, integer)
+     * Status (Single select with choices: Green, Orange, Red)
+     * Reason (Single line text)
+     * Profile URL (URL)
+     * Collected At (Single line text)
+   - Click the Pulse extension icon > Settings tab
+   - Enter your token, base ID (from the Airtable URL: airtable.com/appXXXXXXX/...), and table name
+   - Click "Save Settings" then "Test Connection"
+
+3. COLLECT MESSAGES
+   - Click the Pulse extension icon from ANY page
+   - "Scan All Messages" = automatically opens LinkedIn Messaging, scrolls through entire inbox, collects everything
+   - "Quick Scan" = automatically opens LinkedIn Messaging, captures what's currently visible
+   - No need to navigate manually — the extension handles it!
+   - Results show green/orange/red counts immediately
+
+4. SYNC TO AIRTABLE
+   - After scanning, click "Sync to Airtable"
+   - Records appear in your Airtable base with auto-classification
+
+5. COLOR CLASSIFICATION RULES
+   GREEN  = You (Olivier) sent the last message
+   ORANGE = They replied but no action needed (declines, acknowledgments, "merci je regarde", etc.)
+   RED    = Question asked, interest shown, or action needed (emails requested, meetings proposed, etc.)

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Pulse LinkedIn Collector",
+  "version": "1.2.0",
+  "description": "Collects LinkedIn messages, auto-classifies (Green/Orange/Red), syncs to pulse.gershoncrm.com",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["https://www.linkedin.com/*", "https://pulse.gershoncrm.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/messaging/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

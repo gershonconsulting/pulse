@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 400px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1a1a1a; }
+
+.header { background: linear-gradient(135deg, #0077b5, #005885); color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header .subtitle { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+.logo { width: 32px; height: 32px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0077b5; font-size: 14px; }
+
+.section { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; background: white; }
+.section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 12px; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.stat { text-align: center; padding: 10px 4px; border-radius: 8px; }
+.stat .count { font-size: 24px; font-weight: 700; }
+.stat .label { font-size: 10px; color: #6b7280; margin-top: 2px; }
+.stat-red { background: #fef2f2; }
+.stat-red .count { color: #dc2626; }
+.stat-orange { background: #fffbeb; }
+.stat-orange .count { color: #d97706; }
+.stat-green { background: #f0fdf4; }
+.stat-green .count { color: #16a34a; }
+
+.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #0077b5; color: white; }
+.btn-primary:hover { background: #005885; }
+.btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+.btn-secondary { background: #e5e7eb; color: #374151; margin-top: 8px; }
+.btn-secondary:hover { background: #d1d5db; }
+.btn-sync { background: #059669; color: white; margin-top: 8px; }
+.btn-sync:hover { background: #047857; }
+.btn-sync:disabled { background: #94a3b8; cursor: not-allowed; }
+
+.progress { display: none; padding: 12px; background: #eff6ff; border-radius: 8px; margin-top: 12px; font-size: 13px; color: #1e40af; }
+.progress.active { display: block; }
+
+.conversations { max-height: 300px; overflow-y: auto; }
+.conv-item { padding: 10px 0; border-bottom: 1px solid #f3f4f6; display: flex; gap: 10px; align-items: flex-start; }
+.conv-item:last-child { border-bottom: none; }
+.conv-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.dot-red { background: #dc2626; }
+.dot-orange { background: #d97706; }
+.dot-green { background: #16a34a; }
+.conv-info { flex: 1; min-width: 0; }
+.conv-name { font-size: 13px; font-weight: 600; }
+.conv-snippet { font-size: 11px; color: #6b7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-meta { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+.settings-form label { display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+.settings-form input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin-bottom: 10px; }
+.settings-form input:focus { outline: none; border-color: #0077b5; box-shadow: 0 0 0 2px rgba(0,119,181,0.2); }
+
+.tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; }
+.tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; color: #6b7280; }
+.tab.active { color: #0077b5; border-bottom-color: #0077b5; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+.empty-state { text-align: center; padding: 30px 20px; color: #9ca3af; }
+.empty-state p { font-size: 13px; margin-top: 8px; }
+
+.status-msg { padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-top: 8px; }
+.status-success { background: #f0fdf4; color: #16a34a; }
+.status-error { background: #fef2f2; color: #dc2626; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">P</div>
+  <div>
+    <h1>Pulse Collector</h1>
+    <div class="subtitle">LinkedIn Message Intelligence</div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" data-tab="collect">Collect</div>
+  <div class="tab" data-tab="results">Results</div>
+  <div class="tab" data-tab="settings">Settings</div>
+</div>
+
+<!-- COLLECT TAB -->
+<div class="view active" id="view-collect">
+  <div class="section">
+    <div class="stats" id="stats" style="display:none;">
+      <div class="stat stat-red"><div class="count" id="count-red">0</div><div class="label">Follow-up</div></div>
+      <div class="stat stat-orange"><div class="count" id="count-orange">0</div><div class="label">No action</div></div>
+      <div class="stat stat-green"><div class="count" id="count-green">0</div><div class="label">You sent last</div></div>
+    </div>
+    <button class="btn btn-primary" id="btn-scan">Scan All Messages</button>
+    <button class="btn btn-secondary" id="btn-quick">Quick Scan (visible only)</button>
+    <button class="btn btn-sync" id="btn-sync" disabled>Sync to Airtable</button>
+    <div class="progress" id="progress">Scanning conversations...</div>
+    <div id="status-area"></div>
+  </div>
+</div>
+
+<!-- RESULTS TAB -->
+<div class="view" id="view-results">
+  <div class="section">
+    <div class="section-title">Collected Conversations</div>
+    <div class="conversations" id="conv-list">
+      <div class="empty-state">
+        <p>No conversations collected yet.<br>Go to the Collect tab and scan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div class="view" id="view-settings">
+  <div class="section">
+    <div class="section-title">Pulse Dashboard</div>
+    <div class="settings-form">
+      <label>Pulse Dashboard URL</label>
+      <input type="text" id="input-pulse-url" placeholder="https://pulse.gershoncrm.com" value="https://pulse.gershoncrm.com">
+      <p style="font-size:11px;color:#6b7280;margin:-6px 0 10px;">Results auto-sync here after every scan</p>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Airtable Configuration (Optional)</div>
+    <div class="settings-form">
+      <label>Personal Access Token</label>
+      <input type="password" id="input-token" placeholder="pat...">
+      <label>Base ID</label>
+      <input type="text" id="input-base" placeholder="appXXXXXXXXXXXXXX">
+      <label>Table Name</label>
+      <input type="text" id="input-table" placeholder="LinkedIn Messages" value="LinkedIn Messages">
+      <button class="btn btn-primary" id="btn-save-settings">Save Settings</button>
+      <button class="btn btn-secondary" id="btn-test-connection">Test Connection</button>
+      <div id="settings-status"></div>
+    </div>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
