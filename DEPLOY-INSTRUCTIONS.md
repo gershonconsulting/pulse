@@ -1,193 +1,123 @@
-# Pulse Dashboard v2.0 — Deployment Guide for Charles
+# Pulse Dashboard — Deployment Guide (Browser-Only)
 
+**For:** Charles (Claude Chrome Extension — browser automation only, no terminal/SSH)
 **Site:** https://pulse.gershoncrm.com
+**Stack:** Cloudflare Pages + KV (serverless, no VPS)
 **Repo:** https://github.com/gershonconsulting/pulse
-**VPS:** Hostinger VPS, path `/var/www/gershonpulse/`, port 3010, PM2 app `gershonpulse`
-
-Everything below is done in the browser. No SSH client or terminal app required.
 
 ---
 
-## What This Is
+## Prerequisites
 
-Pulse is a LinkedIn message triage dashboard. A Chrome extension scans Olivier's LinkedIn inbox, classifies every conversation as Red (follow-up needed), Orange (no action), or Green (he sent last), and pushes the results to `pulse.gershoncrm.com` for review.
+Before starting, you need these credentials (ask Olivier if you don't have them):
 
-The repo contains two things:
-- **Dashboard** (`server.js`, `public/index.html`, `package.json`) — Express API + frontend, runs on the VPS
-- **Chrome extension** (`linkedin-pulse-extension/`) — Olivier installs this locally, no server work needed
-
----
-
-## Step 1: Set Up GitHub Repo Secrets
-
-Go to: https://github.com/gershonconsulting/pulse/settings/secrets/actions
-
-Click **New repository secret** three times to add:
-
-| Secret Name | Value | Where to Find It |
-|---|---|---|
-| `VPS_HOST` | The VPS IP address (e.g. `45.xxx.xxx.xxx`) | Hostinger hPanel → VPS → Manage → look for the IP |
-| `VPS_USERNAME` | `root` | Default for Hostinger VPS |
-| `VPS_SSH_KEY` | Private SSH key (see Step 3 below) | Generated on the VPS |
+- **Cloudflare login** (to create KV namespace and Pages project)
+- **GitHub access** to the `gershonconsulting` org (to add secrets if needed)
 
 ---
 
-## Step 2: Open the Hostinger Browser Terminal
+## Step 1 — Verify GitHub Secrets
 
-1. Go to https://hpanel.hostinger.com
-2. Log in with Olivier's credentials (in 1Password)
-3. Find the **VPS** section → click **Manage** on the VPS
-4. Look for **Browser terminal**, **Console**, or **SSH Access** — click to open it
-5. You now have a terminal running on the VPS, inside your browser
+The deploy workflow needs two secrets. They may already exist as org-level secrets from other projects (client, task, radar).
 
----
-
-## Step 3: Generate SSH Key for Auto-Deploy
-
-Run these commands in the Hostinger browser terminal, one at a time:
-
-```bash
-ssh-keygen -t ed25519 -f /root/.ssh/github_deploy -N ""
-```
-
-Then display the **public** key:
-
-```bash
-cat /root/.ssh/github_deploy.pub
-```
-
-Copy this value. Go to https://github.com/gershonconsulting/pulse/settings/keys → **Add deploy key** → paste it → check **Allow write access** → click **Add key**.
-
-Then display the **private** key:
-
-```bash
-cat /root/.ssh/github_deploy
-```
-
-Copy the entire output (including the `-----BEGIN` and `-----END` lines). Go back to https://github.com/gershonconsulting/pulse/settings/secrets/actions → edit `VPS_SSH_KEY` → paste it → **Update secret**.
-
-Then authorize the key for SSH login:
-
-```bash
-cat /root/.ssh/github_deploy.pub >> /root/.ssh/authorized_keys
-```
+1. Go to **https://github.com/gershonconsulting/pulse/settings/secrets/actions**
+2. Check if these secrets exist:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+3. If they already exist (inherited from the org), skip to Step 2
+4. If missing, click **New repository secret** and add each one:
+   - `CLOUDFLARE_API_TOKEN` — the Cloudflare API token with "Edit Cloudflare Pages" and "Edit Workers KV Storage" permissions
+   - `CLOUDFLARE_ACCOUNT_ID` — found in Cloudflare dashboard → any domain → right sidebar → Account ID
 
 ---
 
-## Step 4: Back Up Existing Site
+## Step 2 — Create KV Namespace
 
-In the browser terminal:
-
-```bash
-cp -r /var/www/gershonpulse /var/www/gershonpulse-backup-$(date +%Y%m%d)
-```
-
----
-
-## Step 5: Clone the Repo and Start the App
-
-In the browser terminal, run these one at a time:
-
-```bash
-cd /var/www/gershonpulse
-rm -rf .git
-git init
-git remote add origin https://github.com/gershonconsulting/pulse.git
-git fetch origin
-git checkout -f main
-```
-
-Then install and start:
-
-```bash
-npm install --production
-mkdir -p data
-pm2 restart gershonpulse || pm2 start server.js --name gershonpulse
-pm2 save
-```
+1. Go to **https://dash.cloudflare.com** and log in
+2. In the left sidebar, click **Workers & Pages**
+3. Click **KV** in the sub-menu
+4. Click **Create a namespace**
+5. Name: `pulse-data`
+6. Click **Add**
+7. Note the namespace — you'll bind it in Step 4
 
 ---
 
-## Step 6: Verify
+## Step 3 — Create the Pages Project
 
-Open these URLs in the browser:
+The first deploy via GitHub Actions will auto-create the project, but we can also create it manually:
 
-1. **https://pulse.gershoncrm.com/api/health** — should return:
-   ```json
-   {"status":"ok","uptime":...,"version":"2.0.0"}
-   ```
+1. Go to **https://dash.cloudflare.com** → **Workers & Pages**
+2. Click **Create** → **Pages** → **Direct Upload**
+3. Project name: `gershon-pulse`
+4. Click **Create Project**
+5. You don't need to upload anything — the GitHub Actions workflow handles deploys
 
-2. **https://pulse.gershoncrm.com** — should show the Pulse dashboard with an empty state message ("No messages yet")
-
-If the site doesn't load, check that Nginx is proxying to port 3010. In the browser terminal:
-
-```bash
-cat /etc/nginx/sites-enabled/*gershon* 2>/dev/null || cat /etc/nginx/conf.d/*gershon* 2>/dev/null
-```
-
-Look for a `proxy_pass http://localhost:3010` line. If it's missing, see the Nginx section below.
+*Alternatively, just trigger the workflow (Step 5) and it will create the project automatically.*
 
 ---
 
-## Step 7: Test Auto-Deploy
+## Step 4 — Bind KV Namespace to Pages Project
 
-1. Go to https://github.com/gershonconsulting/pulse/actions
-2. Click **Deploy Pulse Dashboard to VPS**
+1. Go to **https://dash.cloudflare.com** → **Workers & Pages**
+2. Click on the **gershon-pulse** project
+3. Go to **Settings** → **Functions**
+4. Scroll to **KV namespace bindings**
+5. Click **Add binding**
+6. Variable name: `PULSE_KV`
+7. KV namespace: select `pulse-data`
+8. Click **Save**
+
+---
+
+## Step 5 — Trigger First Deploy
+
+1. Go to **https://github.com/gershonconsulting/pulse/actions**
+2. Click **Deploy to Cloudflare Pages** in the left sidebar
 3. Click **Run workflow** → **Run workflow**
-4. Wait for it to finish (should take ~30 seconds and turn green)
-5. Refresh https://pulse.gershoncrm.com to confirm it's still up
-
-If the workflow fails, click on the failed run to see the error. Most common issues:
-- `VPS_SSH_KEY` secret has extra whitespace or is incomplete — re-copy the full private key
-- `VPS_HOST` is wrong — double-check the IP in Hostinger hPanel
-- SSH key not in `authorized_keys` — re-run the `cat >> authorized_keys` command from Step 3
+4. Wait for the job to go green (should take ~30 seconds)
 
 ---
 
-## Nginx Config (only if the site doesn't load after Step 6)
+## Step 6 — Add Custom Domain
 
-If there's no existing Nginx config for `pulse.gershoncrm.com`, create one. In the browser terminal:
-
-```bash
-cat > /etc/nginx/sites-enabled/pulse.gershoncrm.com << 'NGINX'
-server {
-    listen 443 ssl;
-    server_name pulse.gershoncrm.com;
-
-    ssl_certificate /etc/letsencrypt/live/pulse.gershoncrm.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/pulse.gershoncrm.com/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:3010;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-NGINX
-```
-
-Then test and reload:
-
-```bash
-nginx -t && systemctl reload nginx
-```
+1. Go to **https://dash.cloudflare.com** → **Workers & Pages**
+2. Click on the **gershon-pulse** project
+3. Go to **Custom domains** tab
+4. Click **Set up a custom domain**
+5. Enter: `pulse.gershoncrm.com`
+6. Click **Continue** → Cloudflare will auto-create the DNS record (since gershoncrm.com is already on Cloudflare)
+7. Click **Activate domain**
+8. Wait a few minutes for DNS to propagate
 
 ---
 
-## After Deployment
+## Step 7 — Verify
 
-From now on, updating the site is automatic:
-1. Code gets pushed to `main` on GitHub
-2. GitHub Actions SSHs into the VPS, pulls code, runs `npm install`, restarts PM2
+1. Open **https://pulse.gershoncrm.com/api/health**
+   - Expected: `{"status":"ok","version":"3.0.0","platform":"cloudflare-pages"}`
+2. Open **https://pulse.gershoncrm.com**
+   - Should show the Pulse dashboard (empty state until first scan)
+3. If you see errors about PULSE_KV, double-check Step 4 (the KV binding)
+
+---
+
+## How Future Deploys Work
+
+After this initial setup, deployment is fully automatic:
+
+1. Code is pushed to the `main` branch on GitHub
+2. GitHub Actions runs `wrangler pages deploy`
 3. Site updates in ~30 seconds
+4. No server restarts, no SSH, no manual steps
 
 ---
 
-## Warnings
+## Troubleshooting
 
-- **Do NOT delete or modify** anything outside `/var/www/gershonpulse/` — other services run on this VPS (Naomie/OpenClaw)
-- **Do NOT delete** the `data/` directory — it stores message triage data
-- **If something breaks**, restore: `cp -r /var/www/gershonpulse-backup-*/* /var/www/gershonpulse/ && pm2 restart gershonpulse`
+| Issue | Fix |
+|---|---|
+| API returns 500 / "PULSE_KV is not defined" | KV binding missing — redo Step 4 |
+| GitHub Action fails with "authentication error" | Check `CLOUDFLARE_API_TOKEN` secret in Step 1 |
+| Custom domain shows "not found" | Wait 5 min for DNS, then check Step 6 |
+| Dashboard shows "Cannot reach Pulse API" | Check that the deploy succeeded in GitHub Actions |
