@@ -969,3 +969,19 @@
   });
 
   document.getElementById("sort-select").addEventListener("change", (
+e) => {
+    currentSort = e.target.value;
+    loadData();
+  });
+
+  // ─── HELPERS ───
+  function esc(str) { if (!str) return ""; const div = document.createElement("div"); div.textContent = str; return div.innerHTML; }
+  function escapeAttr(str) { if (!str) return ""; return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;"); }
+
+  // ─── INIT ───
+  loadData();
+  setInterval(loadData, 30000);
+</script>
+
+</body>
+</html>
