@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pulse â Gershon.AI</title>
+<title>Pulse &#x2014; Gershon.AI</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230077b5'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold' font-family='system-ui'>P</text></svg>">
 <style>
   :root {
@@ -19,7 +19,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
 
-  /* âââ SIDEBAR âââ */
+  /* &#x2500;&#x2500;&#x2500; SIDEBAR &#x2500;&#x2500;&#x2500; */
   .sidebar {
     width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
@@ -47,7 +47,7 @@
   .sidebar-footer .status-dot.error { background: var(--red); }
   .sidebar-footer .status-dot.warn { background: var(--orange); }
 
-  /* âââ MAIN CONTENT âââ */
+  /* &#x2500;&#x2500;&#x2500; MAIN CONTENT &#x2500;&#x2500;&#x2500; */
   .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
 
   .page-header {
@@ -63,11 +63,11 @@
 
   .container { padding: 24px 32px; }
 
-  /* âââ PAGE VIEWS âââ */
+  /* &#x2500;&#x2500;&#x2500; PAGE VIEWS &#x2500;&#x2500;&#x2500; */
   .page-view { display: none; }
   .page-view.active { display: block; }
 
-  /* âââ DASHBOARD âââ */
+  /* &#x2500;&#x2500;&#x2500; DASHBOARD &#x2500;&#x2500;&#x2500; */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
   .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); border-left: 4px solid transparent; }
   .stat-card.red { border-left-color: var(--red); }
@@ -131,7 +131,7 @@
   .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
   .empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto; line-height: 1.6; }
 
-  /* âââ LOG PAGE âââ */
+  /* &#x2500;&#x2500;&#x2500; LOG PAGE &#x2500;&#x2500;&#x2500; */
   .log-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
   .log-table th { background: var(--bg); text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
   .log-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
@@ -146,7 +146,7 @@
 
   .log-source { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #eff6ff; color: #2563eb; font-weight: 500; }
 
-  /* âââ ANALYSIS PAGE âââ */
+  /* &#x2500;&#x2500;&#x2500; ANALYSIS PAGE &#x2500;&#x2500;&#x2500; */
   .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
   .analysis-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
   .analysis-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
@@ -172,7 +172,7 @@
   .insight-text { font-size: 13px; line-height: 1.5; color: var(--text); }
   .insight-text strong { font-weight: 600; }
 
-  /* âââ SETTINGS PAGE âââ */
+  /* &#x2500;&#x2500;&#x2500; SETTINGS PAGE &#x2500;&#x2500;&#x2500; */
   .settings-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
   .settings-section-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .settings-section-header h3 { font-size: 15px; font-weight: 600; }
@@ -210,7 +210,7 @@
 
   .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
 
-  /* âââ RESPONSIVE âââ */
+  /* &#x2500;&#x2500;&#x2500; RESPONSIVE &#x2500;&#x2500;&#x2500; */
   @media (max-width: 900px) {
     .sidebar { width: 60px; overflow: hidden; }
     .sidebar-brand h1, .sidebar-brand .brand-sub, .nav-item span:not(.nav-icon), .nav-item .nav-badge { display: none; }
@@ -229,7 +229,7 @@
 </head>
 <body>
 
-<!-- âââ SIDEBAR âââ -->
+<!-- &#x2500;&#x2500;&#x2500; SIDEBAR &#x2500;&#x2500;&#x2500; -->
 <aside class="sidebar">
   <div class="sidebar-brand">
     <h1>Pulse</h1>
@@ -237,24 +237,24 @@
   </div>
   <nav class="sidebar-nav">
     <button class="nav-item active" data-page="dashboard">
-      <span class="nav-icon">ð </span>
+      <span class="nav-icon">&#x1F3E0;</span>
       <span>Dashboard</span>
       <span class="nav-badge" id="nav-badge-red" style="display:none"></span>
     </button>
     <button class="nav-item" data-page="growth">
-      <span class="nav-icon">ð</span>
+      <span class="nav-icon">&#x1F4C8;</span>
       <span>Growth</span>
     </button>
     <button class="nav-item" data-page="statistics">
-      <span class="nav-icon">ð</span>
+      <span class="nav-icon">&#x1F4CA;</span>
       <span>Statistics</span>
     </button>
     <button class="nav-item" data-page="log">
-      <span class="nav-icon">ð</span>
+      <span class="nav-icon">&#x1F4CB;</span>
       <span>Log</span>
     </button>
     <button class="nav-item" data-page="settings">
-      <span class="nav-icon">âï¸</span>
+      <span class="nav-icon">&#x2699;&#xFE0F;</span>
       <span>Settings</span>
     </button>
   </nav>
@@ -263,10 +263,10 @@
   </div>
 </aside>
 
-<!-- âââ MAIN CONTENT âââ -->
+<!-- &#x2500;&#x2500;&#x2500; MAIN CONTENT &#x2500;&#x2500;&#x2500; -->
 <div class="main">
 
-  <!-- ââââââââ DASHBOARD ââââââââ -->
+  <!-- &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; DASHBOARD &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; -->
   <div class="page-view active" id="page-dashboard">
     <div class="page-header">
       <div>
@@ -280,22 +280,22 @@
     <div class="container">
       <div class="stats-row">
         <div class="stat-card red">
-          <div class="stat-number" id="stat-red">â</div>
+          <div class="stat-number" id="stat-red">&#x2014;</div>
           <div class="stat-label">Follow-up needed</div>
           <div class="stat-desc">Questions, interest, action required</div>
         </div>
         <div class="stat-card orange">
-          <div class="stat-number" id="stat-orange">â</div>
+          <div class="stat-number" id="stat-orange">&#x2014;</div>
           <div class="stat-label">No action needed</div>
           <div class="stat-desc">Declines, acknowledgments</div>
         </div>
         <div class="stat-card green">
-          <div class="stat-number" id="stat-green">â</div>
+          <div class="stat-number" id="stat-green">&#x2014;</div>
           <div class="stat-label">You sent last</div>
           <div class="stat-desc">Awaiting their reply</div>
         </div>
         <div class="stat-card total">
-          <div class="stat-number" id="stat-total">â</div>
+          <div class="stat-number" id="stat-total">&#x2014;</div>
           <div class="stat-label">Total conversations</div>
           <div class="stat-desc">All classified messages</div>
         </div>
@@ -324,7 +324,7 @@
     </div>
   </div>
 
-  <!-- ââââââââ LOG ââââââââ -->
+  <!-- &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; LOG &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; -->
   <div class="page-view" id="page-log">
     <div class="page-header">
       <div>
@@ -335,15 +335,15 @@
     <div class="container">
       <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
         <div class="stat-card total">
-          <div class="stat-number" id="log-total-scans">â</div>
+          <div class="stat-number" id="log-total-scans">&#x2014;</div>
           <div class="stat-label">Total scans</div>
         </div>
         <div class="stat-card green">
-          <div class="stat-number" id="log-total-msgs">â</div>
+          <div class="stat-number" id="log-total-msgs">&#x2014;</div>
           <div class="stat-label">Messages collected</div>
         </div>
         <div class="stat-card orange">
-          <div class="stat-number" id="log-last-scan-age">â</div>
+          <div class="stat-number" id="log-last-scan-age">&#x2014;</div>
           <div class="stat-label">Since last scan</div>
         </div>
       </div>
@@ -363,7 +363,7 @@
     </div>
   </div>
 
-  <!-- ââââââââ GROWTH ââââââââ -->
+  <!-- &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; GROWTH &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; -->
   <div class="page-view" id="page-growth">
     <div class="page-header">
       <div>
@@ -395,7 +395,7 @@
     </div>
   </div>
 
-  <!-- ââââââââ STATISTICS ââââââââ -->
+  <!-- &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; STATISTICS &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; -->
   <div class="page-view" id="page-statistics">
     <div class="page-header">
       <div>
@@ -421,7 +421,7 @@
     </div>
   </div>
 
-  <!-- ââââââââ SETTINGS ââââââââ -->
+  <!-- &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; SETTINGS &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; -->
   <div class="page-view" id="page-settings">
     <div class="page-header">
       <div>
@@ -439,7 +439,7 @@
         </div>
         <div class="settings-section-body" id="diag-results">
           <div class="diag-item">
-            <div class="diag-icon pending">ð</div>
+            <div class="diag-icon pending">&#x1F50C;</div>
             <div class="diag-body">
               <div class="diag-name">Pulse API</div>
               <div class="diag-detail">Click "Run checks" to test all connections</div>
@@ -447,88 +447,103 @@
             <div class="diag-status"><span class="diag-badge pending">Not tested</span></div>
           </div>
           <div class="diag-item">
-            <div class="diag-icon pending">ð¾', name: 'KV Storage' },
-      { key: 'extension', icon: 'ð§©', name: 'Chrome Extension' },
-      { key: 'linkedin', icon: 'ð', name: 'LinkedIn Connection' },
-      { key: 'lastScan', icon: 'ð', name: 'Last Scan' },
-    ];
-
-    results.innerHTML = checks.map(c =>
-      `<div class="diag-item" id="diag-${c.key}">
-        <div class="diag-icon checking">${c.icon}</div>
-        <div class="diag-body">
-          <div class="diag-name">${c.name}</div>
-          <div class="diag-detail">Checking...</div>
+            <div class="diag-icon pending">&#x1F4BE;</div>
+            <div class="diag-body">
+              <div class="diag-name">KV Storage</div>
+              <div class="diag-detail">Cloudflare KV data store</div>
+            </div>
+            <div class="diag-status"><span class="diag-badge pending">Not tested</span></div>
+          </div>
+          <div class="diag-item">
+            <div class="diag-icon pending">&#x1F9E9;</div>
+            <div class="diag-body">
+              <div class="diag-name">Chrome Extension</div>
+              <div class="diag-detail">Pulse LinkedIn Collector</div>
+            </div>
+            <div class="diag-status"><span class="diag-badge pending">Not tested</span></div>
+          </div>
+          <div class="diag-item">
+            <div class="diag-icon pending">&#x1F517;</div>
+            <div class="diag-body">
+              <div class="diag-name">LinkedIn Connection</div>
+              <div class="diag-detail">Active LinkedIn session</div>
+            </div>
+            <div class="diag-status"><span class="diag-badge pending">Not tested</span></div>
+          </div>
+          <div class="diag-item">
+            <div class="diag-icon pending">&#x1F504;</div>
+            <div class="diag-body">
+              <div class="diag-name">Last Scan</div>
+              <div class="diag-detail">Most recent data collection</div>
+            </div>
+            <div class="diag-status"><span class="diag-badge pending">Not tested</span></div>
+          </div>
         </div>
-        <div class="diag-status"><span class="diag-badge checking"><span class="spinner"></span></span></div>
-      </div>`
-    ).join("");
+      </div>
 
-    // 1. Server-side checks (API, KV, Last Scan)
-    try {
-      const res = await fetch(`${API_BASE}/api/diagnostics`);
-      const data = await res.json();
+      <!-- Configuration -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Configuration</h3>
+        </div>
+        <div class="settings-section-body">
+          <div class="settings-form-group">
+            <label>Pulse API Endpoint</label>
+            <input type="text" id="settings-api-url" value="" readonly>
+            <div class="hint">Auto-detected from current domain</div>
+          </div>
+          <div class="settings-form-group">
+            <label>Chrome Extension Install Link</label>
+            <input type="text" value="Load unpacked from linkedin-pulse-extension/ folder" readonly>
+            <div class="hint">Go to chrome://extensions &#x2192; Developer mode &#x2192; Load unpacked</div>
+          </div>
+        </div>
+      </div>
 
-      updateDiag('api', data.checks.api);
-      updateDiag('kv', data.checks.kv);
-      updateDiag('lastScan', data.checks.lastScan);
+      <!-- About -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>About</h3>
+        </div>
+        <div class="settings-section-body">
+          <div class="settings-form-group">
+            <label>Platform</label>
+            <input type="text" value="Cloudflare Pages + KV" readonly>
+          </div>
+          <div class="settings-form-group">
+            <label>Version</label>
+            <input type="text" value="3.0.0" readonly>
+          </div>
+          <div class="settings-form-group">
+            <label>Extension Version</label>
+            <input type="text" value="1.2.0" readonly>
+          </div>
+          <div class="settings-form-group">
+            <label>Repository</label>
+            <input type="text" value="github.com/gershonconsulting/pulse" readonly>
+          </div>
+        </div>
+      </div>
 
-      // Update footer status
-      const dot = document.getElementById("footer-status-dot");
-      const text = document.getElementById("footer-status-text");
-      dot.className = 'status-dot ' + data.overall;
-      text.textContent = data.overall === 'ok' ? 'All systems OK' : data.overall === 'warn' ? 'Warning' : 'Issues detected';
+    </div>
+  </div>
 
-    } catch (err) {
-      updateDiag('api', { status: 'error', detail: 'Cannot reach API â ' + err.message });
-      updateDiag('kv', { status: 'error', detail: 'Cannot check â API unreachable' });
-      updateDiag('lastScan', { status: 'error', detail: 'Cannot check â API unreachable' });
-    }
+</div>
 
-    // 2. Client-side check: Chrome Extension
-    try {
-      // Try to communicate with the extension via a known extension message
-      // Since we can't directly detect extensions from a web page, we check if the extension
-      // has set a marker on the page or if a previous scan exists
-      const storageCheck = await fetch(`${API_BASE}/api/messages/stats`);
-      const statsData = await storageCheck.json();
+<script>
+  const API_BASE = window.location.origin;
+  let allMessages = [];
+  let allScans = [];
+  let currentFilter = "all";
+  let currentSort = "priority";
+  let searchQuery = "";
 
-      if (statsData.scans && statsData.scans.length > 0) {
-        // Extension has sent data before
-        const lastScan = statsData.scans[0];
-        const ageMs = Date.now() - new Date(lastScan.timestamp).getTime();
-        const source = lastScan.source || 'chrome-extension';
-
-        if (source.includes('chrome') || source.includes('extension')) {
-          updateDiag('extension', {
-            status: ageMs < 7 * 86400000 ? 'ok' : 'warn',
-            detail: `Extension has synced data (last: ${new Date(lastScan.timestamp).toLocaleDateString()})`
-          });
-        } else {
-          updateDiag('extension', { status: 'warn', detail: 'Data exists but source unclear â verify extension is installed' });
-        }
-      } else {
-        updateDiag('extension', { status: 'error', detail: 'No scan data found â install the Chrome extension and run your first scan' });
-      }
-    } catch (err) {
-      updateDiag('extension', { status: 'error', detail: 'Cannot verify â ' + err.message });
-    }
-
-    // 3. Client-side check: LinkedIn connection
-    // We can't directly check LinkedIn cookies from a different domain
-    // But we can infer from scan data
-    try {
-      const storageCheck = await fetch(`${API_BASE}/api/messages/stats`);
-      const statsData = await storageCheck.json();
-
-      if (statsData.scans && statsData.scans.length > 0) {
-        const lastScan = statsData.scans[0];
-        const ageMs = Date.now() - new Date(lastScan.timestamp).getTime();
-
-        if (ageMs < 86400000) {
-          updateDiag('linkedin', { status: 'ok', detail: 'Recent scan successful â LinkedIn session was active' });
-        } else if (ageMs < 7 * 86400000) {
-          updateDiag(forEach(p => p.classList.remove('active'));
+  // \u2500\u2500\u2500 NAVIGATION \u2500\u2500\u2500
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const page = item.dataset.page;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
       item.classList.add('active');
       document.getElementById('page-' + page).classList.add('active');
 
@@ -541,7 +556,7 @@
     });
   });
 
-  // âââ DASHBOARD âââ
+  // \u2500\u2500\u2500 DASHBOARD \u2500\u2500\u2500
   async function loadData() {
     try {
       const params = new URLSearchParams();
@@ -575,9 +590,9 @@
       if (data.lastScan) {
         const scanDate = new Date(data.lastScan.timestamp);
         document.getElementById("last-scan").textContent =
-          `Last scan: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()} â ${data.lastScan.count} conversations`;
+          `Last scan: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()} \u2014 ${data.lastScan.count} conversations`;
       } else {
-        document.getElementById("last-scan").textContent = "No scans yet â use the Chrome extension to collect messages";
+        document.getElementById("last-scan").textContent = "No scans yet \u2014 use the Chrome extension to collect messages";
       }
 
       renderMessages(data.messages);
@@ -616,7 +631,7 @@
             <div class="msg-meta">
               <span class="msg-tag ${s}">${m.status}</span>
               <span class="msg-reason">${esc(m.reason || "")}</span>
-              <span class="msg-date">Last: ${esc(lastSender)} Â· ${esc(m.date || "")}</span>
+              <span class="msg-date">Last: ${esc(lastSender)} \u00B7 ${esc(m.date || "")}</span>
               ${profileLink}
             </div>
           </div>
@@ -640,7 +655,7 @@
     } catch (err) { console.error("Failed to update status:", err); }
   }
 
-  // âââ LOG âââ
+  // \u2500\u2500\u2500 LOG \u2500\u2500\u2500
   async function loadLog() {
     try {
       const res = await fetch(`${API_BASE}/api/messages/stats`);
@@ -655,7 +670,7 @@
         const ageH = Math.round(ageMs / 3600000);
         document.getElementById("log-last-scan-age").textContent = ageH < 1 ? '<1h' : ageH < 24 ? ageH + 'h' : Math.round(ageH/24) + 'd';
       } else {
-        document.getElementById("log-last-scan-age").textContent = 'â';
+        document.getElementById("log-last-scan-age").textContent = '\u2014';
       }
 
       const tbody = document.getElementById("log-tbody");
@@ -684,7 +699,7 @@
     }
   }
 
-  // âââ GROWTH âââ
+  // \u2500\u2500\u2500 GROWTH \u2500\u2500\u2500
   async function loadGrowth() {
     try {
       const res = await fetch(`${API_BASE}/api/messages`);
@@ -739,19 +754,19 @@
       // Pipeline health insights
       const pipeline = [];
       if (stats.red > 0) {
-        pipeline.push({ icon: 'ð´', text: `<strong>${stats.red} conversations</strong> need follow-up â ${Math.round(redPct)}% of pipeline.` });
+        pipeline.push({ icon: '\uD83D\uDD34', text: `<strong>${stats.red} conversations</strong> need follow-up \u2014 ${Math.round(redPct)}% of pipeline.` });
       }
       if (stats.green > stats.red) {
-        pipeline.push({ icon: 'â', text: `Outreach is ahead â"<strong>${stats.green} outgoing</strong> vs ${stats.red} pending.` });
+        pipeline.push({ icon: '\u2705', text: `Outreach is ahead \u2014 <strong>${stats.green} outgoing</strong> vs ${stats.red} pending.` });
       } else if (stats.red > stats.green && stats.red > 0) {
-        pipeline.push({ icon: 'â ï¸', text: `<strong>${stats.red} pending follow-ups</strong> exceed outgoing (${stats.green}). Time to catch up.` });
+        pipeline.push({ icon: '\u26A0\uFE0F', text: `<strong>${stats.red} pending follow-ups</strong> exceed outgoing (${stats.green}). Time to catch up.` });
       }
       if (stats.total > 0) {
         const responseRate = Math.round(((stats.red + stats.orange) / total) * 100);
-        pipeline.push({ icon: 'ð', text: `<strong>${responseRate}% response rate</strong> â ${stats.red + stats.orange} of ${total} contacts replied.` });
+        pipeline.push({ icon: '\uD83D\uDCCA', text: `<strong>${responseRate}% response rate</strong> \u2014 ${stats.red + stats.orange} of ${total} contacts replied.` });
       }
       if (stats.total === 0) {
-        pipeline.push({ icon: 'ð­', text: 'No messages yet. Run your first scan with the Chrome extension.' });
+        pipeline.push({ icon: '\uD83D\uDCED', text: 'No messages yet. Run your first scan with the Chrome extension.' });
       }
 
       document.getElementById("growth-pipeline").innerHTML = pipeline.map(i =>
@@ -763,7 +778,7 @@
     }
   }
 
-  // âââ STATISTICS âââ
+  // \u2500\u2500\u2500 STATISTICS \u2500\u2500\u2500
   async function loadStatistics() {
     try {
       const res = await fetch(`${API_BASE}/api/messages`);
@@ -775,18 +790,18 @@
 
       const insights = [];
       if (stats.red > 0) {
-        insights.push({ icon: 'ð´', text: `<strong>${stats.red} conversations</strong> need your follow-up â that's ${Math.round(redPct)}% of your pipeline.` });
+        insights.push({ icon: '\uD83D\uDD34', text: `<strong>${stats.red} conversations</strong> need your follow-up \u2014 that's ${Math.round(redPct)}% of your pipeline.` });
       }
       if (stats.green > stats.red) {
-        insights.push({ icon: 'â', text: `You're ahead â more conversations where <strong>you sent last</strong> (${stats.green}) than ones needing follow-up (${stats.red}).` });
+        insights.push({ icon: '\u2705', text: `You're ahead \u2014 more conversations where <strong>you sent last</strong> (${stats.green}) than ones needing follow-up (${stats.red}).` });
       } else if (stats.red > stats.green && stats.red > 0) {
-        insights.push({ icon: 'â ï¸', text: `You have <strong>more pending follow-ups</strong> (${stats.red}) than outgoing messages (${stats.green}). Time to catch up.` });
+        insights.push({ icon: '\u26A0\uFE0F', text: `You have <strong>more pending follow-ups</strong> (${stats.red}) than outgoing messages (${stats.green}). Time to catch up.` });
       }
       if (stats.orange > 0) {
-        insights.push({ icon: 'ð ', text: `<strong>${stats.orange} conversations</strong> marked "no action needed" â declines or acknowledgments.` });
+        insights.push({ icon: '\uD83D\uDFE0', text: `<strong>${stats.orange} conversations</strong> marked "no action needed" \u2014 declines or acknowledgments.` });
       }
       if (stats.total === 0) {
-        insights.push({ icon: 'ð­', text: 'No messages collected yet. Install the Chrome extension and run your first scan.' });
+        insights.push({ icon: '\uD83D\uDCED', text: 'No messages collected yet. Install the Chrome extension and run your first scan.' });
       }
 
       document.getElementById("stats-insights").innerHTML = insights.map(i =>
@@ -815,7 +830,7 @@
     }
   }
 
-  // âââ SETTINGS DIAGNOSTICS âââ
+  // \u2500\u2500\u2500 SETTINGS DIAGNOSTICS \u2500\u2500\u2500
   async function runDiagnostics() {
     const btn = document.getElementById("btn-run-diag");
     btn.disabled = true;
@@ -825,11 +840,11 @@
 
     // Show checking state
     const checks = [
-      { key: 'api', icon: 'ð', name: 'Pulse API' },
-      { key: 'kv', icon: 'ð¾', name: 'KV Storage' },
-      { key: 'extension', icon: 'ð§©', name: 'Chrome Extension' },
-      { key: 'linkedin', icon: 'ð', name: 'LinkedIn Connection' },
-      { key: 'lastScan', icon: 'ð', name: 'Last Scan' },
+      { key: 'api', icon: '\uD83D\uDD0C', name: 'Pulse API' },
+      { key: 'kv', icon: '\uD83D\uDCBE', name: 'KV Storage' },
+      { key: 'extension', icon: '\uD83E\uDDE9', name: 'Chrome Extension' },
+      { key: 'linkedin', icon: '\uD83D\uDD17', name: 'LinkedIn Connection' },
+      { key: 'lastScan', icon: '\uD83D\uDD04', name: 'Last Scan' },
     ];
 
     results.innerHTML = checks.map(c =>
@@ -859,9 +874,9 @@
       text.textContent = data.overall === 'ok' ? 'All systems OK' : data.overall === 'warn' ? 'Warning' : 'Issues detected';
 
     } catch (err) {
-      updateDiag('api', { status: 'error', detail: 'Cannot reach API â ' + err.message });
-      updateDiag('kv', { status: 'error', detail: 'Cannot check â API unreachable' });
-      updateDiag('lastScan', { status: 'error', detail: 'Cannot check â API unreachable' });
+      updateDiag('api', { status: 'error', detail: 'Cannot reach API \u2014 ' + err.message });
+      updateDiag('kv', { status: 'error', detail: 'Cannot check \u2014 API unreachable' });
+      updateDiag('lastScan', { status: 'error', detail: 'Cannot check \u2014 API unreachable' });
     }
 
     // 2. Client-side check: Chrome Extension
@@ -884,13 +899,13 @@
             detail: `Extension has synced data (last: ${new Date(lastScan.timestamp).toLocaleDateString()})`
           });
         } else {
-          updateDiag('extension', { status: 'warn', detail: 'Data exists but source unclear â verify extension is installed' });
+          updateDiag('extension', { status: 'warn', detail: 'Data exists but source unclear \u2014 verify extension is installed' });
         }
       } else {
-        updateDiag('extension', { status: 'error', detail: 'No scan data found â install the Chrome extension and run your first scan' });
+        updateDiag('extension', { status: 'error', detail: 'No scan data found \u2014 install the Chrome extension and run your first scan' });
       }
     } catch (err) {
-      updateDiag('extension', { status: 'error', detail: 'Cannot verify â ' + err.message });
+      updateDiag('extension', { status: 'error', detail: 'Cannot verify \u2014 ' + err.message });
     }
 
     // 3. Client-side check: LinkedIn connection
@@ -905,17 +920,17 @@
         const ageMs = Date.now() - new Date(lastScan.timestamp).getTime();
 
         if (ageMs < 86400000) {
-          updateDiag('linkedin', { status: 'ok', detail: 'Recent scan successful â LinkedIn session was active' });
+          updateDiag('linkedin', { status: 'ok', detail: 'Recent scan successful \u2014 LinkedIn session was active' });
         } else if (ageMs < 7 * 86400000) {
-          updateDiag('linkedin', { status: 'warn', detail: 'Last scan was ' + Math.round(ageMs / 86400000) + ' days ago â re-scan to verify LinkedIn session' });
+          updateDiag('linkedin', { status: 'warn', detail: 'Last scan was ' + Math.round(ageMs / 86400000) + ' days ago \u2014 re-scan to verify LinkedIn session' });
         } else {
-          updateDiag('linkedin', { status: 'error', detail: 'No recent scan â log into LinkedIn and run a scan to verify' });
+          updateDiag('linkedin', { status: 'error', detail: 'No recent scan \u2014 log into LinkedIn and run a scan to verify' });
         }
       } else {
-        updateDiag('linkedin', { status: 'error', detail: 'No scan data â log into LinkedIn, install extension, and run a scan' });
+        updateDiag('linkedin', { status: 'error', detail: 'No scan data \u2014 log into LinkedIn, install extension, and run a scan' });
       }
     } catch (err) {
-      updateDiag('linkedin', { status: 'error', detail: 'Cannot verify â ' + err.message });
+      updateDiag('linkedin', { status: 'error', detail: 'Cannot verify \u2014 ' + err.message });
     }
 
     btn.disabled = false;
@@ -937,7 +952,7 @@
     badge.textContent = statusLabels[check.status] || check.status;
   }
 
-  // âââ FILTER & SEARCH âââ
+  // \u2500\u2500\u2500 FILTER & SEARCH \u2500\u2500\u2500
   document.getElementById("filter-tabs").addEventListener("click", (e) => {
     const tab = e.target.closest(".filter-tab");
     if (!tab) return;
@@ -953,19 +968,4 @@
     searchTimeout = setTimeout(() => { searchQuery = e.target.value.trim(); loadData(); }, 300);
   });
 
-  document.getElementById("sort-select").addEventListener("change", (e) => {
-    currentSort = e.target.value;
-    loadData();
-  });
-
-  // âââ HELPERS âââ
-  function esc(str) { if (!str) return ""; const div = document.createElement("div"); div.textContent = str; return div.innerHTML; }
-  function escapeAttr(str) { if (!str) return ""; return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;"); }
-
-  // âââ INIT âââ
-  loadData();
-  setInterval(loadData, 30000);
-</script>
-
-</body>
-</html>
+  document.getElementById("sort-select").addEventListener("change", (
