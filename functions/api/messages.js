@@ -107,8 +107,21 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-export async function onRequestDelete({ env }) {
+export async function onRequestDelete({ request, env }) {
   try {
+    const url = new URL(request.url);
+    const name = url.searchParams.get('name');
+
+    if (name) {
+      // Delete a single message by name
+      const data = await readData(env.PULSE_KV);
+      const before = data.messages.length;
+      data.messages = data.messages.filter(m => m.name !== name);
+      await writeData(env.PULSE_KV, data);
+      return json({ success: true, deleted: before - data.messages.length, remaining: data.messages.length });
+    }
+
+    // No name param = clear all (dangerous, keep for admin)
     await writeData(env.PULSE_KV, { scans: [], messages: [] });
     return json({ success: true });
   } catch (err) {
