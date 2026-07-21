@@ -6,6 +6,7 @@
 
   const SCROLL_DELAY = 1500;
   const MAX_SCROLL_ATTEMPTS = 50;
+  const CAMPAIGN_PATTERN = /\b(BD\d+)\b/i; // Matches campaign codes like BD18, BD20
 
   // Classification rules
   function classify(conversation) {
@@ -151,6 +152,45 @@
       profileUrl = profileLink.href;
     }
 
+    // Thread ID from conversation link
+    let threadId = "";
+    let conversationLink = "";
+    const threadLink = item.querySelector('a[href*="/messaging/thread/"]');
+    if (threadLink) {
+      const href = threadLink.getAttribute("href") || "";
+      const threadMatch = href.match(/\/messaging\/thread\/([^/]+)/);
+      if (threadMatch) {
+        threadId = threadMatch[1];
+        conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
+      }
+    }
+    // Fallback: try data attributes or onclick handlers
+    if (!threadId) {
+      const dataId = item.getAttribute("data-thread-id") ||
+                     item.querySelector('[data-thread-id]')?.getAttribute("data-thread-id") || "";
+      if (dataId) {
+        threadId = dataId;
+        conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
+      }
+    }
+    // Last resort: use searchString
+    if (!conversationLink && name) {
+      conversationLink = "https://www.linkedin.com/messaging/?searchString=" + encodeURIComponent(name);
+    }
+
+    // Extract campaign code from snippet or full text
+    let campaign = null;
+    const allText = lines.join(" ");
+    const campMatch = allText.match(CAMPAIGN_PATTERN);
+    if (campMatch) {
+      campaign = campMatch[1].toUpperCase();
+    }
+    // Also check snippet specifically
+    if (!campaign && snippet) {
+      const snippetMatch = snippet.match(CAMPAIGN_PATTERN);
+      if (snippetMatch) campaign = snippetMatch[1].toUpperCase();
+    }
+
     if (!name || name.includes("Sponsored")) return null;
 
     const conv = { name, snippet, lastSender, date, unread, profileUrl };
@@ -160,6 +200,9 @@
       ...conv,
       status: classification.status,
       reason: classification.reason,
+      threadId,
+      conversationLink,
+      campaign,
       collectedAt: new Date().toISOString(),
     };
   }
