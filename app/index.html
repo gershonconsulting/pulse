@@ -115,7 +115,23 @@
   .msg-tag.red { background: var(--red-bg); color: var(--red); }
   .msg-tag.orange { background: var(--orange-bg); color: var(--orange); }
   .msg-tag.green { background: var(--green-bg); color: var(--green); }
+  .msg-name-link { font-size: 15px; font-weight: 600; color: var(--text); text-decoration: none; }
+  .msg-name-link:hover { color: var(--accent); text-decoration: underline; }
   .msg-reason { font-size: 11px; color: var(--muted); }
+  .msg-date { font-size: 11px; color: var(--muted); opacity: 0.7; }
+
+  .fit-badge, .interest-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .fit-badge { margin-left: 4px; }
+  .fit-badge.fit-high { background: #dbeafe; color: #1d4ed8; }
+  .fit-badge.fit-medium { background: #e0e7ff; color: #4338ca; }
+  .fit-badge.fit-low { background: #f1f5f9; color: #64748b; }
+  .interest-badge { margin-left: 4px; }
+  .interest-badge.interest-high { background: #dcfce7; color: #15803d; }
+  .interest-badge.interest-medium { background: #fef9c3; color: #a16207; }
+  .interest-badge.interest-low { background: #fee2e2; color: #b91c1c; }
+  .interest-badge.interest-n\/a { background: #f1f5f9; color: #94a3b8; }
+
+  .msg-geo, .msg-lang { font-size: 11px; color: var(--muted); padding: 1px 6px; background: var(--bg); border-radius: 4px; }
   .msg-date { font-size: 11px; color: var(--muted); opacity: 0.7; }
 
   .msg-actions { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
@@ -566,6 +582,8 @@
 
       const res = await fetch(`${API_BASE}/api/messages?${params}`);
       const data = await res.json();
+      // Client-side stats recount
+      if (data.messages && data.messages.length > 0) { let r=0,o=0,g=0; data.messages.forEach(m => { const s=(m.status||'').toLowerCase(); if(s==='red')r++; else if(s==='orange')o++; else if(s==='green')g++; }); data.stats={red:r,orange:o,green:g,total:data.messages.length}; }
 
       allMessages = data.messages;
 
@@ -604,6 +622,8 @@
   }
 
   function renderMessages(messages) {
+    // Normalize status capitalization
+    messages = messages.map(m => ({...m, status: m.status ? m.status.charAt(0).toUpperCase() + m.status.slice(1).toLowerCase() : 'Red'}));
     const list = document.getElementById("message-list");
 
     if (!messages || messages.length === 0) {
@@ -626,12 +646,16 @@
         <div class="message-item" data-name="${escapeAttr(m.name)}">
           <div class="msg-status ${s}"></div>
           <div class="msg-body">
-            <div class="msg-name">${esc(m.name)}</div>
+            <div class="msg-name"><a href="${escapeAttr(m.conversationLink || '#')}" target="_blank" class="msg-name-link">${esc(m.name)}</a></div>
             <div class="msg-snippet">${esc(m.snippet || "(no preview)")}</div>
             <div class="msg-meta">
               <span class="msg-tag ${s}">${m.status}</span>
+              ${m.fit ? '<span class="fit-badge fit-' + (m.fit||'').toLowerCase() + '">FIT: ' + esc(m.fit) + '</span>' : ''}
+              ${m.interest ? '<span class="interest-badge interest-' + (m.interest||'').toLowerCase().replace('/','\\/') + '">INT: ' + esc(m.interest) + '</span>' : ''}
+              ${m.country ? '<span class="msg-geo">' + esc(m.country) + '</span>' : ''}
+              ${m.language ? '<span class="msg-lang">' + esc(m.language) + '</span>' : ''}
               <span class="msg-reason">${esc(m.reason || "")}</span>
-              <span class="msg-date">Last: ${esc(lastSender)} \u00B7 ${esc(m.date || "")}</span>
+              <span class="msg-date">${esc(m.timestamp || m.date || "")}</span>
               ${profileLink}
             </div>
           </div>
@@ -976,6 +1000,7 @@ e) => {
 
   // ─── HELPERS ───
   function esc(str) { if (!str) return ""; const div = document.createElement("div"); div.textContent = str; return div.innerHTML; }
+  function escapeAttr(str) { if (!str) return ""; return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;"); }
   function escapeAttr(str) { if (!str) return ""; return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;"); }
 
   // ─── INIT ───
