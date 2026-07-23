@@ -82,17 +82,60 @@ export async function onRequestPost({ request, env }) {
     if (data.scans.length > 100) data.scans = data.scans.slice(0, 100);
 
     // Upsert messages by name (latest scan wins, preserve manual overrides)
+    // Track status transitions for progress tracking
     const existingByName = new Map(data.messages.map(m => [m.name, m]));
+    const incomingNames = new Set(conversations.map(c => c.name));
+    const transitions = [];  // { name, from, to }
+    let newCount = 0;
+    let unchangedCount = 0;
+
     for (const conv of conversations) {
       const prev = existingByName.get(conv.name);
+      const prevStatus = prev ? prev.status : null;
+      const newStatus = conv.status;
+
+      // Track transition
+      if (!prev) {
+        newCount++;
+      } else if (prevStatus !== newStatus) {
+        transitions.push({ name: conv.name, from: prevStatus, to: newStatus });
+      } else {
+        unchangedCount++;
+      }
+
+      // Build status history
+      let statusHistory = (prev && prev.statusHistory) ? [...prev.statusHistory] : [];
+      if (prev && prevStatus !== newStatus) {
+        statusHistory.push({ from: prevStatus, to: newStatus, timestamp: now, scanId: scan.id });
+        // Keep last 20 transitions per message
+        if (statusHistory.length > 20) statusHistory = statusHistory.slice(-20);
+      }
+
       existingByName.set(conv.name, {
         ...conv,
         scanId: scan.id,
         updatedAt: now,
+        previousStatus: prevStatus,
+        statusHistory,
+        firstSeenAt: prev ? (prev.firstSeenAt || prev.updatedAt || now) : now,
         ...(prev && prev.manualStatus ? { manualStatus: prev.manualStatus } : {}),
       });
     }
     data.messages = Array.from(existingByName.values());
+
+    // Compute transition summary for the scan record
+    const transitionSummary = {};
+    for (const t of transitions) {
+      const key = t.from + '→' + t.to;
+      transitionSummary[key] = (transitionSummary[key] || 0) + 1;
+    }
+    scan.diff = {
+      newConversations: newCount,
+      statusChanged: transitions.length,
+      unchanged: unchangedCount,
+      transitions: transitionSummary,
+      details: transitions.slice(0, 50),  // store up to 50 individual transitions
+    };
 
     await writeData(env.PULSE_KV, data);
 
@@ -101,6 +144,7 @@ export async function onRequestPost({ request, env }) {
       scanId: scan.id,
       received: conversations.length,
       totalStored: data.messages.length,
+      diff: scan.diff,
     });
   } catch (err) {
     return json({ error: err.message }, 500);
