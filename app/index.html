@@ -316,6 +316,38 @@
   .campaign-name { font-weight: 700; color: var(--accent); font-size: 14px; }
   .campaign-sparkline { display: inline-block; vertical-align: middle; }
 
+  /* ─── PROGRESS TRACKER ─── */
+  .progress-tracker { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+  .progress-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .progress-header h3 { font-size: 15px; font-weight: 600; }
+  .progress-body { padding: 20px 24px; }
+
+  .progress-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .progress-stat { text-align: center; padding: 16px; border-radius: 10px; background: var(--bg); }
+  .progress-stat-num { font-size: 28px; font-weight: 800; }
+  .progress-stat-num.treated { color: var(--green); }
+  .progress-stat-num.regressed { color: var(--red); }
+  .progress-stat-num.changed { color: var(--accent); }
+  .progress-stat-num.new-conv { color: var(--orange); }
+  .progress-stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+  .transition-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .transition-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; background: var(--bg); }
+  .transition-arrow { font-size: 14px; font-weight: 700; color: var(--muted); }
+  .transition-from, .transition-to { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 4px; }
+  .transition-from.Red, .transition-to.Red { background: var(--red-bg); color: var(--red); }
+  .transition-from.Orange, .transition-to.Orange { background: var(--orange-bg); color: var(--orange); }
+  .transition-from.Green, .transition-to.Green { background: var(--green-bg); color: var(--green); }
+  .transition-count { margin-left: auto; font-size: 18px; font-weight: 800; color: var(--text); }
+  .transition-names { font-size: 12px; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .scan-timeline { margin-top: 16px; }
+  .scan-timeline h4 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .no-progress { text-align: center; padding: 32px 20px; color: var(--muted); }
+  .no-progress p { font-size: 13px; line-height: 1.6; max-width: 400px; margin: 0 auto; }
+  .no-progress .hint-icon { font-size: 32px; margin-bottom: 8px; }
+
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 </style>
@@ -363,7 +395,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.0.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.1.0</div>
   </div>
 </aside>
 
@@ -412,6 +444,17 @@
           <span style="font-size:12px;color:var(--muted)">FIT: High + INTEREST: High</span>
         </div>
         <div id="hot-leads-body">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Progress Tracker -->
+      <div class="progress-tracker" id="progress-tracker">
+        <div class="progress-header">
+          <h3>&#128640; Progress Tracker</h3>
+          <span style="font-size:12px;color:var(--muted)" id="progress-subtitle">Changes between scans</span>
+        </div>
+        <div class="progress-body" id="progress-body">
           <div class="loading">Loading...</div>
         </div>
       </div>
@@ -1045,6 +1088,9 @@ function updateDashboard(sData) {
     ).join("");
   }
 
+  // Progress Tracker
+  renderProgressTracker(sData);
+
   // Response rate donut (Replied=Red vs Awaiting=Green+Orange)
   const replied = statsData.red;
   const awaiting = statsData.green + statsData.orange;
@@ -1091,6 +1137,177 @@ function updateFooterStatus(ok) {
   const text = document.getElementById("footer-status-text");
   dot.className = "status-dot " + (ok ? "ok" : "error");
   text.textContent = ok ? "Online" : "Offline";
+}
+
+// ─── PROGRESS TRACKER ───
+function renderProgressTracker(sData) {
+  const body = document.getElementById("progress-body");
+  const subtitle = document.getElementById("progress-subtitle");
+  const scans = sData && sData.scans ? sData.scans : [];
+  const progress = sData && sData.progress ? sData.progress : {};
+  const lastScan = scans[0] || null;
+  const prevScan = scans[1] || null;
+
+  // Check if we have any progress data (from status histories on messages)
+  const hasHistory = allMessages.some(function(m) { return m.statusHistory && m.statusHistory.length > 0; });
+  const hasScanDiff = lastScan && lastScan.diff;
+
+  if (!hasHistory && !hasScanDiff && scans.length < 2) {
+    body.innerHTML =
+      '<div class="no-progress">' +
+        '<div class="hint-icon">&#128205;</div>' +
+        '<p>Progress tracking starts after your next scan. Run the Chrome extension again to see what changed since the last collection.</p>' +
+      '</div>';
+    subtitle.textContent = "Run another scan to start tracking";
+    return;
+  }
+
+  // Build subtitle with timeframe
+  if (lastScan && prevScan) {
+    subtitle.textContent = "Since " + formatDate(prevScan.timestamp);
+  } else if (lastScan) {
+    subtitle.textContent = "Last scan: " + formatDate(lastScan.timestamp);
+  }
+
+  // Compute numbers from scan diff OR from aggregate progress
+  var treated = progress.treatedCount || 0;
+  var regressed = progress.regressedCount || 0;
+  var changed = 0;
+  var newConv = 0;
+  var transitions = {};
+
+  if (hasScanDiff) {
+    changed = lastScan.diff.statusChanged || 0;
+    newConv = lastScan.diff.newConversations || 0;
+    transitions = lastScan.diff.transitions || {};
+  }
+
+  // If no scan diff yet, compute from message histories
+  if (!hasScanDiff && hasHistory) {
+    transitions = progress.allTransitions || {};
+    changed = progress.totalTransitions || 0;
+  }
+
+  var html = '';
+
+  // Progress stats row
+  html += '<div class="progress-stats">';
+  html += '<div class="progress-stat"><div class="progress-stat-num treated">' + treated + '</div><div class="progress-stat-label">Treated</div></div>';
+  html += '<div class="progress-stat"><div class="progress-stat-num regressed">' + regressed + '</div><div class="progress-stat-label">Need attention again</div></div>';
+  html += '<div class="progress-stat"><div class="progress-stat-num changed">' + changed + '</div><div class="progress-stat-label">Status changed</div></div>';
+  html += '<div class="progress-stat"><div class="progress-stat-num new-conv">' + newConv + '</div><div class="progress-stat-label">New conversations</div></div>';
+  html += '</div>';
+
+  // Transition breakdown
+  var transKeys = Object.keys(transitions);
+  if (transKeys.length > 0) {
+    html += '<div style="margin-bottom:12px"><span style="font-size:13px;font-weight:600;color:var(--text)">Status Transitions</span></div>';
+    html += '<div class="transition-list">';
+
+    // Sort: most impactful first
+    transKeys.sort(function(a, b) { return transitions[b] - transitions[a]; });
+
+    transKeys.forEach(function(key) {
+      var parts = key.split('→');
+      var from = parts[0] || '?';
+      var to = parts[1] || '?';
+      var count = transitions[key];
+
+      // Find names of people who transitioned (from last scan diff details)
+      var names = '';
+      if (hasScanDiff && lastScan.diff.details) {
+        var matchedNames = lastScan.diff.details
+          .filter(function(d) { return d.from === from && d.to === to; })
+          .map(function(d) { return d.name; });
+        if (matchedNames.length > 0) {
+          names = matchedNames.join(', ');
+        }
+      }
+
+      // Icon based on direction
+      var icon = '&#8594;';
+      if (from === 'Red' && (to === 'Green' || to === 'Orange')) icon = '&#9989;';
+      else if ((to === 'Red') && (from === 'Green' || from === 'Orange')) icon = '&#9888;&#65039;';
+
+      html += '<div class="transition-row">';
+      html += '<span class="transition-from ' + esc(from) + '">' + esc(from) + '</span>';
+      html += '<span class="transition-arrow">' + icon + '</span>';
+      html += '<span class="transition-to ' + esc(to) + '">' + esc(to) + '</span>';
+      if (names) {
+        html += '<span class="transition-names" title="' + escapeAttr(names) + '">' + esc(names) + '</span>';
+      }
+      html += '<span class="transition-count">' + count + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Scan history timeline chart (status distribution over scans)
+  if (scans.length >= 2) {
+    html += '<div class="scan-timeline">';
+    html += '<h4>Progress Over Time</h4>';
+
+    // Build stacked data from scan history
+    var timelineData = scans.slice(0, 15).reverse();
+    var maxTotal = Math.max.apply(null, timelineData.map(function(s) { return (s.red || 0) + (s.orange || 0) + (s.green || 0); }));
+    if (maxTotal === 0) maxTotal = 1;
+
+    var w = 600, h = 200;
+    var pad = { top: 20, right: 20, bottom: 50, left: 50 };
+    var chartW = w - pad.left - pad.right;
+    var chartH = h - pad.top - pad.bottom;
+    var barW = Math.min(40, (chartW / timelineData.length) - 4);
+    var gap = chartW / timelineData.length;
+
+    var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:220px">';
+
+    // Y-axis
+    for (var i = 0; i <= 4; i++) {
+      var yy = pad.top + (chartH / 4) * i;
+      var val = Math.round(maxTotal - (maxTotal / 4) * i);
+      svg += '<line x1="' + pad.left + '" y1="' + yy + '" x2="' + (w - pad.right) + '" y2="' + yy + '" stroke="#e2e8f0" stroke-width="0.5"/>';
+      svg += '<text x="' + (pad.left - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + val + '</text>';
+    }
+
+    // Stacked bars
+    timelineData.forEach(function(s, idx) {
+      var x = pad.left + idx * gap + (gap - barW) / 2;
+      var rh = ((s.red || 0) / maxTotal) * chartH;
+      var oh = ((s.orange || 0) / maxTotal) * chartH;
+      var gh = ((s.green || 0) / maxTotal) * chartH;
+      var bottom = pad.top + chartH;
+
+      // Green at bottom, then orange, then red on top
+      svg += '<rect x="' + x + '" y="' + (bottom - gh) + '" width="' + barW + '" height="' + gh + '" fill="var(--green)" rx="2" opacity="0.85"/>';
+      svg += '<rect x="' + x + '" y="' + (bottom - gh - oh) + '" width="' + barW + '" height="' + oh + '" fill="var(--orange)" rx="2" opacity="0.85"/>';
+      svg += '<rect x="' + x + '" y="' + (bottom - gh - oh - rh) + '" width="' + barW + '" height="' + rh + '" fill="var(--red)" rx="2" opacity="0.85"/>';
+
+      // Label
+      var scanDate = new Date(s.timestamp);
+      var lbl = (scanDate.getMonth() + 1) + '/' + scanDate.getDate();
+      svg += '<text x="' + (x + barW / 2) + '" y="' + (h - pad.bottom + 16) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-35 ' + (x + barW / 2) + ' ' + (h - pad.bottom + 16) + ')">' + lbl + '</text>';
+
+      // Diff badge on top if scan has diff data
+      if (s.diff && s.diff.statusChanged > 0) {
+        var topY = bottom - gh - oh - rh - 14;
+        svg += '<text x="' + (x + barW / 2) + '" y="' + topY + '" text-anchor="middle" font-size="9" fill="var(--accent)" font-weight="700">' + s.diff.statusChanged + ' chg</text>';
+      }
+    });
+
+    svg += '</svg>';
+
+    // Legend
+    html += svg;
+    html += '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px">';
+    html += '<span style="font-size:11px;color:var(--muted)"><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Follow-up</span>';
+    html += '<span style="font-size:11px;color:var(--muted)"><span style="display:inline-block;width:10px;height:10px;background:var(--orange);border-radius:2px;margin-right:4px;vertical-align:middle"></span>No action</span>';
+    html += '<span style="font-size:11px;color:var(--muted)"><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span>You sent last</span>';
+    html += '</div>';
+
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
 }
 
 // ─── CONVERSATIONS ───
