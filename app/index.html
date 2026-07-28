@@ -179,6 +179,13 @@
   .lead-link-muted:hover { text-decoration: underline; }
   .snippet-link { color: inherit; text-decoration: none; }
   .snippet-link:hover { text-decoration: underline; }
+  #sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 30px; background: #0f172a; color: #fff; display: none; align-items: center; z-index: 9999; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  #sync-bar.active { display: flex; }
+  #sync-bar-fill { position: absolute; top: 0; left: 0; bottom: 0; width: 0%; background: linear-gradient(90deg,#059669,#10b981); transition: width 0.4s ease; }
+  #sync-bar-fill.indeterminate { width: 35% !important; animation: syncslide 1.1s ease-in-out infinite; }
+  @keyframes syncslide { 0% { left: -35%; } 100% { left: 100%; } }
+  #sync-bar-text { position: relative; z-index: 1; padding-left: 16px; font-size: 12px; font-weight: 600; }
+  .hot-lead-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   /* ─── DONUT CHART ─── */
   .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
@@ -392,6 +399,12 @@
 </head>
 <body>
 
+<!-- Live sync progress bar (shown while the Chrome extension is running Sync Now) -->
+<div id="sync-bar" role="status" aria-live="polite">
+  <div id="sync-bar-fill"></div>
+  <div id="sync-bar-text">Syncing&hellip;</div>
+</div>
+
 <!-- Mobile toggle -->
 <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 
@@ -433,7 +446,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.4.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.5.0</div>
   </div>
 </aside>
 
@@ -1164,6 +1177,7 @@ function updateDashboard(sData) {
         '<div class="hot-lead-info">' +
           '<div class="hot-lead-name"><a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="lead-link">' + esc(m.name) + '</a></div>' +
           '<div class="hot-lead-snippet"><a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="lead-link-muted">' + esc(m.snippet || "(no preview)") + '</a></div>' +
+          ((m.timestamp || m.date) ? '<div class="hot-lead-date">' + esc(formatDate(m.timestamp || m.date)) + '</div>' : '') +
         '</div>' +
         '<a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-profile">Profile &#8599;</a>' +
         '<a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-reply">Open chat &rarr;</a>' +
@@ -1481,7 +1495,7 @@ function renderMessages(messages) {
           (m.country ? '<span class="msg-geo">' + esc(m.country) + '</span>' : '') +
           (m.language ? '<span class="msg-lang">' + esc(m.language) + '</span>' : '') +
           (m.campaign ? '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:600">' + esc(m.campaign) + '</span>' : '') +
-          '<span style="font-size:11px;color:var(--muted);opacity:0.7">' + formatDate(m.timestamp) + '</span>' +
+          '<span style="font-size:11px;color:var(--muted);opacity:0.7">' + formatDate(m.timestamp || m.date) + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="msg-actions">' +
@@ -2241,6 +2255,45 @@ function filterByCampaign(name) {
 // ─── INIT ───
 loadAllData();
 setInterval(loadAllData, 30000);
+
+// ─── LIVE SYNC PROGRESS BAR ───
+// Polls /api/scan-status; shows a bar while the extension's Sync Now runs,
+// and auto-refreshes the data when the scan completes.
+let _syncWasActive = false;
+async function pollScanStatus() {
+  try {
+    const s = await fetch(API_BASE + "/api/scan-status", { cache: "no-store" }).then(r => r.json());
+    const bar = document.getElementById("sync-bar");
+    const fill = document.getElementById("sync-bar-fill");
+    const text = document.getElementById("sync-bar-text");
+    const active = s && (s.phase === "starting" || s.phase === "scanning" || s.phase === "capturing-links");
+    if (active) {
+      _syncWasActive = true;
+      bar.classList.add("active");
+      if (s.total > 0) {
+        fill.classList.remove("indeterminate");
+        const pct = Math.min(100, Math.round((s.count / s.total) * 100));
+        fill.style.width = pct + "%";
+        text.textContent = (s.phase === "capturing-links" ? "Capturing links… " : "Scanning… ") + s.count + " / " + s.total + " conversations";
+      } else {
+        fill.classList.add("indeterminate");
+        text.textContent = s.count ? ("Scanning… " + s.count + " found") : "Starting sync…";
+      }
+    } else if (s && s.phase === "done") {
+      const bar2 = document.getElementById("sync-bar");
+      const fill2 = document.getElementById("sync-bar-fill");
+      fill2.classList.remove("indeterminate");
+      fill2.style.width = "100%";
+      document.getElementById("sync-bar-text").textContent = "Sync complete — refreshing…";
+      if (_syncWasActive) { _syncWasActive = false; loadAllData(); }
+      setTimeout(() => bar2.classList.remove("active"), 2500);
+    } else {
+      document.getElementById("sync-bar").classList.remove("active");
+    }
+  } catch (e) { /* ignore */ }
+}
+pollScanStatus();
+setInterval(pollScanStatus, 2500);
 </script>
 
 </body>
