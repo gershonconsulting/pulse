@@ -121,10 +121,11 @@ export async function onRequestPost({ request, env }) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: env.EMAIL_FROM || 'Pulse <pulse@gershoncrm.com>',
+            from: env.EMAIL_FROM || 'Pulse <pulse@gershon.ai>',
             to: [env.REPORT_EMAIL || 'report@gershonconsulting.com'],
             subject: `Pulse LinkedIn Report — ${dateRange}`,
             html: htmlEmail,
+            text: `Pulse LinkedIn Report — ${dateRange}\n\nPipeline: ${red.length} Red, ${orange.length} Orange, ${green.length} Green (${total} total)\nSources: LinkedIn Messaging (${linkedinMessages.length}), Sales Navigator (${salesNavMessages.length})\nProgress: ${treatedCount} treated, ${regressedCount} need attention again\n\nView full report: https://pulse.gershoncrm.com`,
           }),
         });
 
