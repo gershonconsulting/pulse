@@ -155,28 +155,75 @@
       profileUrl = profileLink.href;
     }
 
-    // Thread ID from conversation link
+    // Thread ID from conversation link — try multiple strategies
     let threadId = "";
     let conversationLink = "";
-    const threadLink = item.querySelector('a[href*="/messaging/thread/"]');
-    if (threadLink) {
-      const href = threadLink.getAttribute("href") || "";
-      const threadMatch = href.match(/\/messaging\/thread\/([^/]+)/);
+
+    // Strategy 1: The main conversation link element (most reliable)
+    const mainLink = item.querySelector('a.msg-conversation-listitem__link') ||
+                     item.querySelector('a[href*="/messaging/thread/"]') ||
+                     item.querySelector('a[data-control-name="view_message"]');
+    if (mainLink) {
+      const href = mainLink.getAttribute("href") || "";
+      const threadMatch = href.match(/\/messaging\/thread\/([^/?]+)/);
       if (threadMatch) {
         threadId = threadMatch[1];
         conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
       }
     }
-    // Fallback: try data attributes or onclick handlers
+
+    // Strategy 2: Any <a> inside the list item with a thread path
+    if (!threadId) {
+      const allLinks = item.querySelectorAll('a[href]');
+      for (const link of allLinks) {
+        const href = link.getAttribute("href") || "";
+        const threadMatch = href.match(/\/messaging\/thread\/([^/?]+)/);
+        if (threadMatch) {
+          threadId = threadMatch[1];
+          conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
+          break;
+        }
+      }
+    }
+
+    // Strategy 3: data attributes on the item or its children
     if (!threadId) {
       const dataId = item.getAttribute("data-thread-id") ||
-                     item.querySelector('[data-thread-id]')?.getAttribute("data-thread-id") || "";
+                     item.querySelector('[data-thread-id]')?.getAttribute("data-thread-id") ||
+                     item.getAttribute("data-thread-urn") ||
+                     item.querySelector('[data-thread-urn]')?.getAttribute("data-thread-urn") || "";
       if (dataId) {
-        threadId = dataId;
+        threadId = dataId.replace(/^urn:li:messagingThread:/, '');
         conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
       }
     }
-    // Last resort: use searchString
+
+    // Strategy 4: Extract from the item's id attribute (LinkedIn uses URN-based IDs)
+    if (!threadId) {
+      const itemId = item.getAttribute("id") || "";
+      const idMatch = itemId.match(/thread[_-]?(.+)/i);
+      if (idMatch) {
+        threadId = idMatch[1];
+        conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
+      }
+    }
+
+    // Strategy 5: Click the item to trigger navigation, read the URL from the panel
+    // (done passively — if conversation is already selected, grab from current URL)
+    if (!threadId && window.location.href.includes('/messaging/thread/')) {
+      // Check if this conversation is the currently active one
+      const isActive = item.classList.contains('active') ||
+                       item.querySelector('.msg-conversation-listitem__link--active');
+      if (isActive) {
+        const urlMatch = window.location.href.match(/\/messaging\/thread\/([^/?]+)/);
+        if (urlMatch) {
+          threadId = urlMatch[1];
+          conversationLink = "https://www.linkedin.com/messaging/thread/" + threadId + "/";
+        }
+      }
+    }
+
+    // Last resort: use searchString (unreliable but better than nothing)
     if (!conversationLink && name) {
       conversationLink = "https://www.linkedin.com/messaging/?searchString=" + encodeURIComponent(name);
     }

@@ -14,7 +14,7 @@ async function syncToPulse(conversations) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         conversations,
-        scanMeta: { source: "chrome-extension", version: "1.4.0" },
+        scanMeta: { source: "chrome-extension", version: "1.5.0" },
       }),
     });
 

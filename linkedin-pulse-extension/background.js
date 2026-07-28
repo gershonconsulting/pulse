@@ -102,7 +102,7 @@ async function syncSource(url, matchPattern, sourceName) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             conversations: response.conversations,
-            scanMeta: { source: sourceName, version: '1.4.0', autoSync: true }
+            scanMeta: { source: sourceName, version: '1.5.0', autoSync: true }
           })
         });
         const data = await res.json();
@@ -281,4 +281,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-console.log("[Pulse] Background service worker loaded (v1.4.0)");
+console.log("[Pulse] Background service worker loaded (v1.5.0)");
