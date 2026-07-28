@@ -178,6 +178,28 @@
   .analysis-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
   .analysis-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
   .analysis-card.full-width { grid-column: 1 / -1; }
+  .insight-box { margin-top: 16px; padding: 14px 16px; background: #f8fafc; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .insight-box:empty { display: none; }
+  .health-gauge { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+  .health-gauge .gauge-item { flex: 1; min-width: 140px; text-align: center; padding: 20px 16px; border-radius: 12px; }
+  .health-gauge .gauge-value { font-size: 32px; font-weight: 700; }
+  .health-gauge .gauge-label { font-size: 12px; margin-top: 4px; }
+  .health-gauge .gauge-bar { height: 6px; border-radius: 3px; margin-top: 10px; }
+  .health-gauge .gauge-green { background: var(--green-bg); border: 1px solid var(--green-border); }
+  .health-gauge .gauge-green .gauge-value { color: var(--green); }
+  .health-gauge .gauge-green .gauge-bar { background: var(--green); }
+  .health-gauge .gauge-orange { background: var(--orange-bg); border: 1px solid var(--orange-border); }
+  .health-gauge .gauge-orange .gauge-value { color: var(--orange); }
+  .health-gauge .gauge-orange .gauge-bar { background: var(--orange); }
+  .health-gauge .gauge-red { background: var(--red-bg); border: 1px solid var(--red-border); }
+  .health-gauge .gauge-red .gauge-value { color: var(--red); }
+  .health-gauge .gauge-red .gauge-bar { background: var(--red); }
+  .health-gauge .gauge-blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .health-gauge .gauge-blue .gauge-value { color: #2563eb; }
+  .health-gauge .gauge-blue .gauge-bar { background: #2563eb; }
+  .health-score-summary { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+  .health-score-ring { width: 100px; height: 100px; flex-shrink: 0; }
+  .health-score-text { font-size: 14px; line-height: 1.6; color: var(--muted); }
 
   .bar-chart { display: flex; flex-direction: column; gap: 10px; }
   .bar-row { display: flex; align-items: center; gap: 12px; }
@@ -395,7 +417,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.1.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.2.0</div>
   </div>
 </aside>
 
@@ -533,28 +555,55 @@
     <div class="page-header">
       <div>
         <h2>Growth</h2>
-        <div class="header-sub">Trends and pipeline momentum</div>
+        <div class="header-sub">Pipeline health, response performance &amp; lead momentum</div>
       </div>
     </div>
     <div class="container">
+      <!-- Response Health Score -->
       <div class="analysis-grid">
-        <div class="analysis-card full-width">
-          <h3>Scan Timeline</h3>
-          <div id="growth-timeline">
+        <div class="analysis-card full-width" id="growth-health-card">
+          <h3>Response Health Score</h3>
+          <div id="growth-health">
             <div class="loading">Loading...</div>
           </div>
+          <div class="insight-box" id="growth-health-insight"></div>
         </div>
+      </div>
+      <!-- Pipeline Status Trend -->
+      <div class="analysis-grid">
+        <div class="analysis-card full-width">
+          <h3>Pipeline Status Over Time</h3>
+          <div id="growth-pipeline">
+            <div class="loading">Loading...</div>
+          </div>
+          <div class="insight-box" id="growth-pipeline-insight"></div>
+        </div>
+      </div>
+      <!-- Two-column charts -->
+      <div class="analysis-grid">
         <div class="analysis-card">
-          <h3>Conversation Volume Over Time</h3>
+          <h3>Conversation Volume by Month</h3>
           <div id="growth-volume">
             <div class="loading">Loading...</div>
           </div>
+          <div class="insight-box" id="growth-volume-insight"></div>
         </div>
         <div class="analysis-card">
           <h3>Total Conversations Trend</h3>
           <div id="growth-trend">
             <div class="loading">Loading...</div>
           </div>
+          <div class="insight-box" id="growth-trend-insight"></div>
+        </div>
+      </div>
+      <!-- Response Time Distribution -->
+      <div class="analysis-grid">
+        <div class="analysis-card full-width">
+          <h3>Response Time Distribution</h3>
+          <div id="growth-response-time">
+            <div class="loading">Loading...</div>
+          </div>
+          <div class="insight-box" id="growth-response-time-insight"></div>
         </div>
       </div>
     </div>
@@ -1080,7 +1129,7 @@ function updateDashboard(sData) {
       '<div class="hot-lead-item">' +
         '<div class="hot-lead-rank">' + (i + 1) + '</div>' +
         '<div class="hot-lead-info">' +
-          '<div class="hot-lead-name">' + esc(m.name) + '</div>' +
+          '<div class="hot-lead-name"><a href="' + escapeAttr(m.conversationLink || '#') + '" target="_blank" style="color:inherit;text-decoration:none">' + esc(m.name) + '</a></div>' +
           '<div class="hot-lead-snippet">' + esc(m.snippet || "(no preview)") + '</div>' +
         '</div>' +
         '<a href="' + escapeAttr(m.conversationLink || '#') + '" target="_blank" class="hot-lead-reply">Reply &rarr;</a>' +
@@ -1460,40 +1509,133 @@ document.getElementById("campaign-filter").addEventListener("change", function(e
 
 // ─── GROWTH ───
 function renderGrowth() {
-  // Scan timeline
-  var timelineEl = document.getElementById("growth-timeline");
-  if (allScans.length === 0) {
-    timelineEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No scan data yet</p></div>';
+  var now = new Date();
+  var TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+  var ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+  // ── Response Health Score ──
+  var healthEl = document.getElementById("growth-health");
+  var healthInsight = document.getElementById("growth-health-insight");
+  if (allMessages.length === 0) {
+    healthEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No data yet</p></div>';
   } else {
-    var timelineData = allScans.slice().reverse().map(function(s) {
-      return { label: formatDate(s.timestamp), value: s.count || 0, color: "var(--accent)" };
+    // Classify each Red conversation by how long they've been waiting
+    var redMsgs = allMessages.filter(function(m) { return m.status === "Red"; });
+    var greenCount = 0, orangeCount = 0, redCount = 0, criticalCount = 0;
+    redMsgs.forEach(function(m) {
+      var lastDate = m.updatedAt ? new Date(m.updatedAt) : (m.timestamp ? new Date(m.timestamp) : null);
+      if (!lastDate) { redCount++; return; }
+      var elapsed = now - lastDate;
+      if (elapsed > ONE_WEEK) criticalCount++;
+      else if (elapsed > TWO_DAYS) redCount++;
+      else orangeCount++;
     });
-    timelineEl.innerHTML = svgBarChart(timelineData, 800, 200);
+    // Conversations where we sent last = "healthy"
+    greenCount = allMessages.filter(function(m) { return m.status === "Green"; }).length;
+    var orangeStatus = allMessages.filter(function(m) { return m.status === "Orange"; }).length;
+    var total = allMessages.length;
+    // Health score: 100 = all green, 0 = all critical red
+    var healthScore = Math.round(((greenCount + orangeStatus * 0.7 + orangeCount * 0.3) / total) * 100);
+    var scoreColor = healthScore >= 60 ? "var(--green)" : healthScore >= 35 ? "var(--orange)" : "var(--red)";
+    var scoreBg = healthScore >= 60 ? "var(--green-bg)" : healthScore >= 35 ? "var(--orange-bg)" : "var(--red-bg)";
+
+    // Ring SVG
+    var circumference = 2 * Math.PI * 40;
+    var dashOffset = circumference - (healthScore / 100) * circumference;
+    var ring = '<svg class="health-score-ring" viewBox="0 0 100 100">' +
+      '<circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="8"/>' +
+      '<circle cx="50" cy="50" r="40" fill="none" stroke="' + scoreColor + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + dashOffset + '" transform="rotate(-90 50 50)"/>' +
+      '<text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="' + scoreColor + '">' + healthScore + '</text>' +
+      '</svg>';
+
+    healthEl.innerHTML = '<div class="health-score-summary">' + ring +
+      '<div class="health-score-text"><strong style="font-size:18px;color:' + scoreColor + '">' +
+      (healthScore >= 60 ? 'Healthy' : healthScore >= 35 ? 'Needs Attention' : 'Critical') +
+      '</strong><br>Your overall response health score based on how quickly you engage with leads.</div></div>' +
+      '<div class="health-gauge">' +
+      '<div class="gauge-item gauge-green"><div class="gauge-value">' + greenCount + '</div><div class="gauge-label">You sent last</div><div class="gauge-bar"></div></div>' +
+      '<div class="gauge-item gauge-orange"><div class="gauge-value">' + (orangeStatus + orangeCount) + '</div><div class="gauge-label">Waiting &lt; 2 days</div><div class="gauge-bar"></div></div>' +
+      '<div class="gauge-item gauge-red"><div class="gauge-value">' + redCount + '</div><div class="gauge-label">Waiting 2-7 days</div><div class="gauge-bar"></div></div>' +
+      '<div class="gauge-item" style="background:#fef2f2;border:2px solid var(--red)"><div class="gauge-value" style="color:var(--red)">' + criticalCount + '</div><div class="gauge-label" style="font-weight:600;color:var(--red)">Waiting &gt; 1 week</div><div class="gauge-bar" style="background:var(--red)"></div></div>' +
+      '</div>';
+
+    // Insight
+    var pctCritical = Math.round((criticalCount / total) * 100);
+    var pctGreen = Math.round((greenCount / total) * 100);
+    if (criticalCount > 0) {
+      healthInsight.innerHTML = '<strong>Action needed:</strong> ' + criticalCount + ' conversation' + (criticalCount > 1 ? 's have' : ' has') + ' been waiting over a week for your reply (' + pctCritical + '% of pipeline). These leads are likely going cold. ' +
+        'You\'re actively engaged with ' + pctGreen + '% of conversations. Focus on the critical backlog to prevent lost opportunities.';
+    } else if (redCount > 0) {
+      healthInsight.innerHTML = '<strong>Getting there:</strong> No conversations are past the 1-week mark, but ' + redCount + ' are in the 2-7 day window. Try to respond within 48 hours to keep momentum. You\'re green on ' + pctGreen + '% of conversations.';
+    } else {
+      healthInsight.innerHTML = '<strong>Excellent:</strong> All conversations are current. You\'re responding within 48 hours and maintaining strong engagement with ' + pctGreen + '% of your pipeline actively covered.';
+    }
   }
 
-  // Conversation volume over time (by month)
+  // ── Pipeline Status Over Time (stacked bar chart) ──
+  var pipelineEl = document.getElementById("growth-pipeline");
+  var pipelineInsight = document.getElementById("growth-pipeline-insight");
+  if (allScans.length === 0) {
+    pipelineEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No scan data yet</p></div>';
+  } else {
+    var scanData = allScans.slice().reverse();
+    var pipeData = scanData.map(function(s) {
+      return { label: formatDate(s.timestamp), red: s.red || 0, orange: s.orange || 0, green: s.green || 0 };
+    });
+    pipelineEl.innerHTML = svgStackedBarChart(pipeData, 800, 220);
+
+    // Insight
+    var first = scanData[0], last = scanData[scanData.length - 1];
+    var redDelta = (last.red || 0) - (first.red || 0);
+    var greenDelta = (last.green || 0) - (first.green || 0);
+    var insights = [];
+    if (redDelta > 0) insights.push('Red conversations increased by ' + redDelta + ' since the first scan — more leads need attention.');
+    if (redDelta < 0) insights.push('Red conversations dropped by ' + Math.abs(redDelta) + ' — you\'re clearing the backlog.');
+    if (greenDelta > 0) insights.push('Green (you sent last) grew by ' + greenDelta + ', showing stronger outreach.');
+    if (insights.length === 0) insights.push('Pipeline composition is stable across scans.');
+    pipelineInsight.innerHTML = '<strong>Trend:</strong> ' + insights.join(' ');
+  }
+
+  // ── Conversation Volume by Month ──
   var volumeEl = document.getElementById("growth-volume");
+  var volumeInsight = document.getElementById("growth-volume-insight");
   if (allMessages.length === 0) {
     volumeEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No data yet</p></div>';
   } else {
     var monthCounts = {};
     var monthSortKeys = {};
+    var monthRed = {};
     allMessages.forEach(function(m) {
       if (!m.timestamp) return;
       var key = getMonthKey(m.timestamp);
       monthCounts[key] = (monthCounts[key] || 0) + 1;
       monthSortKeys[key] = getMonthSortKey(m.timestamp);
+      if (m.status === "Red") monthRed[key] = (monthRed[key] || 0) + 1;
     });
-    var volumeData = Object.keys(monthCounts).sort(function(a, b) {
-      return monthSortKeys[a] - monthSortKeys[b];
-    }).map(function(k) {
-      return { label: k, value: monthCounts[k], color: "var(--accent)" };
+    var sortedMonths = Object.keys(monthCounts).sort(function(a, b) { return monthSortKeys[a] - monthSortKeys[b]; });
+    var volumeData = sortedMonths.map(function(k) {
+      var redPct = (monthRed[k] || 0) / monthCounts[k];
+      var color = redPct > 0.7 ? "var(--red)" : redPct > 0.4 ? "var(--orange)" : "var(--green)";
+      return { label: k, value: monthCounts[k], color: color };
     });
     volumeEl.innerHTML = svgBarChart(volumeData, 500, 220);
+
+    // Insight
+    var lastMonth = sortedMonths[sortedMonths.length - 1];
+    var prevMonth = sortedMonths.length > 1 ? sortedMonths[sortedMonths.length - 2] : null;
+    var lastCount = monthCounts[lastMonth];
+    var prevCount = prevMonth ? monthCounts[prevMonth] : 0;
+    var delta = lastCount - prevCount;
+    var redRatio = Math.round(((monthRed[lastMonth] || 0) / lastCount) * 100);
+    volumeInsight.innerHTML = '<strong>' + lastMonth + ':</strong> ' + lastCount + ' conversations' +
+      (prevMonth ? ' (' + (delta >= 0 ? '+' : '') + delta + ' vs ' + prevMonth + ')' : '') +
+      '. ' + redRatio + '% need your response. ' +
+      (redRatio > 60 ? 'High red ratio — prioritize follow-ups.' : redRatio > 30 ? 'Moderate backlog — stay on top of replies.' : 'Strong engagement — keep it up.');
   }
 
-  // Trend line
+  // ── Total Conversations Trend ──
   var trendEl = document.getElementById("growth-trend");
+  var trendInsight = document.getElementById("growth-trend-insight");
   if (allScans.length === 0) {
     trendEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No trend data yet</p></div>';
   } else {
@@ -1501,7 +1643,99 @@ function renderGrowth() {
       return { label: formatDate(s.timestamp), value: s.count || 0 };
     });
     trendEl.innerHTML = svgLineChart(trendData, 500, 220);
+
+    // Insight
+    var firstVal = trendData[0].value;
+    var lastVal = trendData[trendData.length - 1].value;
+    var growth = lastVal - firstVal;
+    var growthPct = firstVal > 0 ? Math.round((growth / firstVal) * 100) : 0;
+    trendInsight.innerHTML = '<strong>Pipeline size:</strong> From ' + firstVal + ' to ' + lastVal + ' conversations (' +
+      (growth >= 0 ? '+' : '') + growth + ', ' + (growth >= 0 ? '+' : '') + growthPct + '%). ' +
+      (growth > 20 ? 'Strong pipeline growth — your outreach is generating new conversations.' :
+       growth > 0 ? 'Steady growth — pipeline is expanding gradually.' :
+       growth === 0 ? 'Pipeline is stable.' : 'Pipeline contracted — consider increasing outreach volume.');
   }
+
+  // ── Response Time Distribution ──
+  var rtEl = document.getElementById("growth-response-time");
+  var rtInsight = document.getElementById("growth-response-time-insight");
+  if (allMessages.length === 0) {
+    rtEl.innerHTML = '<div class="empty-state" style="padding:20px"><p>No data yet</p></div>';
+  } else {
+    var buckets = { "< 1 day": 0, "1-2 days": 0, "2-4 days": 0, "4-7 days": 0, "1-2 weeks": 0, "> 2 weeks": 0 };
+    var redMsgs2 = allMessages.filter(function(m) { return m.status === "Red"; });
+    redMsgs2.forEach(function(m) {
+      var lastDate = m.updatedAt ? new Date(m.updatedAt) : (m.timestamp ? new Date(m.timestamp) : null);
+      if (!lastDate) { buckets["> 2 weeks"]++; return; }
+      var days = (now - lastDate) / (24 * 60 * 60 * 1000);
+      if (days < 1) buckets["< 1 day"]++;
+      else if (days < 2) buckets["1-2 days"]++;
+      else if (days < 4) buckets["2-4 days"]++;
+      else if (days < 7) buckets["4-7 days"]++;
+      else if (days < 14) buckets["1-2 weeks"]++;
+      else buckets["> 2 weeks"]++;
+    });
+    var colors = ["var(--green)", "var(--green)", "var(--orange)", "var(--orange)", "var(--red)", "var(--red)"];
+    var rtData = Object.keys(buckets).map(function(k, i) {
+      return { label: k, value: buckets[k], color: colors[i] };
+    });
+    rtEl.innerHTML = svgBarChart(rtData, 800, 200);
+
+    var urgent = buckets["4-7 days"] + buckets["1-2 weeks"] + buckets["> 2 weeks"];
+    var fresh = buckets["< 1 day"] + buckets["1-2 days"];
+    rtInsight.innerHTML = '<strong>Response backlog:</strong> ' + fresh + ' conversations are fresh (replied in last 2 days). ' +
+      urgent + ' are in the danger zone (4+ days without reply). ' +
+      (urgent > 10 ? 'You have a significant backlog — block time this week to clear it.' :
+       urgent > 0 ? 'A few conversations are aging — try to respond before they go cold.' :
+       'No conversations in the danger zone. You\'re responding promptly.');
+  }
+}
+
+// ─── STACKED BAR CHART SVG HELPER ───
+function svgStackedBarChart(data, width, height) {
+  if (!data.length) return '<div class="empty-state" style="padding:20px"><p>No data</p></div>';
+  var pad = { top: 20, right: 20, bottom: 60, left: 50 };
+  var w = width || 800;
+  var h = height || 220;
+  var chartW = w - pad.left - pad.right;
+  var chartH = h - pad.top - pad.bottom;
+  var maxVal = Math.max.apply(null, data.map(function(d) { return d.red + d.orange + d.green; }));
+  if (maxVal === 0) maxVal = 1;
+  var gap = chartW / data.length;
+  var barW = Math.max(8, Math.min(30, gap * 0.5));
+
+  var bars = "";
+  data.forEach(function(d, i) {
+    var x = pad.left + i * gap + gap / 2 - barW / 2;
+    var total = d.red + d.orange + d.green;
+    var hRed = (d.red / maxVal) * chartH;
+    var hOrange = (d.orange / maxVal) * chartH;
+    var hGreen = (d.green / maxVal) * chartH;
+    var yBase = pad.top + chartH;
+    // Stack: green bottom, orange middle, red top
+    bars += '<rect x="' + x + '" y="' + (yBase - hGreen) + '" width="' + barW + '" height="' + hGreen + '" fill="var(--green)" rx="1"/>';
+    bars += '<rect x="' + x + '" y="' + (yBase - hGreen - hOrange) + '" width="' + barW + '" height="' + hOrange + '" fill="var(--orange)" rx="1"/>';
+    bars += '<rect x="' + x + '" y="' + (yBase - hGreen - hOrange - hRed) + '" width="' + barW + '" height="' + hRed + '" fill="var(--red)" rx="1"/>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (h - pad.bottom + 16) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-35 ' + (x + barW / 2) + ' ' + (h - pad.bottom + 16) + ')">' + esc(d.label) + '</text>';
+  });
+
+  // Y axis
+  var yAxis = "";
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.top + (chartH / 4) * i;
+    var val = Math.round(maxVal - (maxVal / 4) * i);
+    yAxis += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (w - pad.right) + '" y2="' + y + '" stroke="#e2e8f0" stroke-width="0.5"/>';
+    yAxis += '<text x="' + (pad.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + val + '</text>';
+  }
+
+  // Legend
+  var legend = '<g transform="translate(' + (w - 200) + ', 8)">' +
+    '<rect x="0" y="0" width="10" height="10" fill="var(--red)" rx="2"/><text x="14" y="9" font-size="10" fill="var(--muted)">Need action</text>' +
+    '<rect x="80" y="0" width="10" height="10" fill="var(--orange)" rx="2"/><text x="94" y="9" font-size="10" fill="var(--muted)">No action</text>' +
+    '<rect x="155" y="0" width="10" height="10" fill="var(--green)" rx="2"/><text x="169" y="9" font-size="10" fill="var(--muted)">Sent last</text>' +
+    '</g>';
+
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:' + h + 'px">' + yAxis + bars + legend + '</svg>';
 }
 
 // ─── ANALYTICS ───
