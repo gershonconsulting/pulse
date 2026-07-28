@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Pulse LinkedIn Collector",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Collects LinkedIn messages, auto-classifies (Green/Orange/Red), syncs to pulse.gershoncrm.com",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "alarms"],
   "host_permissions": ["https://www.linkedin.com/*", "https://pulse.gershoncrm.com/*"],
   "action": {
     "default_popup": "popup.html",
@@ -15,7 +15,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/messaging/*"],
+      "matches": ["https://www.linkedin.com/messaging/*", "https://www.linkedin.com/sales/inbox/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

@@ -14,7 +14,7 @@ async function syncToPulse(conversations) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         conversations,
-        scanMeta: { source: "chrome-extension", version: "1.2.0" },
+        scanMeta: { source: "chrome-extension", version: "1.4.0" },
       }),
     });
 
@@ -78,7 +78,7 @@ function renderConversations(conversations) {
       <div class="conv-info">
         <div class="conv-name">${escapeHtml(c.name)}</div>
         <div class="conv-snippet">${escapeHtml(c.snippet || "(no preview)")}</div>
-        <div class="conv-meta">${escapeHtml(c.date)} &middot; ${c.status} &middot; ${escapeHtml(c.reason)}</div>
+        <div class="conv-meta">${escapeHtml(c.date)} &middot; ${c.status} &middot; ${escapeHtml(c.reason)}${c.source === "sales-navigator" ? " &middot; SN" : ""}</div>
       </div>
     </div>
   `
@@ -303,6 +303,13 @@ document.getElementById("btn-sync").addEventListener("click", async () => {
   );
 });
 
+// Force auto-sync button
+document.getElementById("btn-force-sync")?.addEventListener("click", () => {
+  chrome.runtime.sendMessage({ type: "FORCE_AUTO_SYNC" }, (response) => {
+    showStatus("autosync-status", "Auto-sync triggered — check back in a minute", false);
+  });
+});
+
 // Settings
 document.getElementById("btn-save-settings").addEventListener("click", () => {
   const token = document.getElementById("input-token").value.trim();
@@ -330,7 +337,7 @@ document.getElementById("btn-test-connection").addEventListener("click", () => {
 
 // Load saved data on popup open
 chrome.storage.local.get(
-  ["conversations", "lastScan", "airtableToken", "airtableBaseId", "airtableTableName", "pulseUrl"],
+  ["conversations", "lastScan", "airtableToken", "airtableBaseId", "airtableTableName", "pulseUrl", "lastAutoSync"],
   (data) => {
     if (data.conversations && data.conversations.length > 0) {
       collectedConversations = data.conversations;
@@ -341,6 +348,10 @@ chrome.storage.local.get(
     if (data.airtableBaseId) document.getElementById("input-base").value = data.airtableBaseId;
     if (data.airtableTableName) document.getElementById("input-table").value = data.airtableTableName;
     if (data.pulseUrl) document.getElementById("input-pulse-url").value = data.pulseUrl;
+    if (data.lastAutoSync) {
+      const el = document.getElementById("last-autosync");
+      if (el) el.textContent = "Last auto-sync: " + new Date(data.lastAutoSync).toLocaleString();
+    }
   }
 );
 

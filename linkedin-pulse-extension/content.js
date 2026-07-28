@@ -1,5 +1,5 @@
 // Pulse LinkedIn Collector - Content Script
-// Runs on LinkedIn messaging pages to extract conversation data
+// Runs on LinkedIn messaging pages and Sales Navigator inbox to extract conversation data
 
 (function () {
   "use strict";
@@ -7,6 +7,9 @@
   const SCROLL_DELAY = 1500;
   const MAX_SCROLL_ATTEMPTS = 50;
   const CAMPAIGN_PATTERN = /\b(BD\d+)\b/i; // Matches campaign codes like BD18, BD20
+
+  // Detect page type
+  const isSalesNavigator = location.pathname.startsWith('/sales/inbox');
 
   // Classification rules
   function classify(conversation) {
@@ -80,7 +83,7 @@
     return { status: "Green", reason: "No action detected" };
   }
 
-  // Extract data from a single conversation list item
+  // Extract data from a single LinkedIn Messaging conversation list item
   function extractConversation(item) {
     const lines = item.innerText.split("\n").filter((l) => l.trim());
 
@@ -203,11 +206,109 @@
       threadId,
       conversationLink,
       campaign,
+      source: "linkedin-messaging",
       collectedAt: new Date().toISOString(),
     };
   }
 
-  // Scroll the conversation list to load all items
+  // Extract data from a single Sales Navigator inbox conversation list item
+  function extractSNConversation(item) {
+    const lines = item.innerText.split("\n").filter((l) => l.trim());
+
+    // Sales Navigator structure: [Name, Snippet, Date]
+    let name = "";
+    let snippet = "";
+    let date = "";
+
+    if (lines.length >= 1) {
+      name = lines[0].trim();
+    }
+    if (lines.length >= 2) {
+      snippet = lines[1].trim();
+    }
+    if (lines.length >= 3) {
+      date = lines[2].trim();
+    }
+
+    if (!name) return null;
+
+    // Determine lastSender:
+    // In SN there's no "You:" prefix. Detect if you sent last by checking
+    // if snippet starts with greeting patterns (= you initiated/replied last)
+    let lastSender = "them";
+    const youSentPatterns = [
+      /^Bonjour\s/i,
+      /^Hi\s/i,
+      /^Hello\s/i,
+      /^Hey\s/i,
+      /^Dear\s/i,
+      /^Cher\s/i,
+      /^Ch[eè]re\s/i,
+      /^Bonsoir\s/i,
+    ];
+    for (const pattern of youSentPatterns) {
+      if (pattern.test(snippet)) {
+        lastSender = "you";
+        break;
+      }
+    }
+
+    // Thread ID from data attribute
+    let threadId = "";
+    const dataAttr = item.getAttribute("data-x-conversation-list-item") || "";
+    if (dataAttr) {
+      threadId = dataAttr;
+    }
+
+    // Conversation link from the item's link element
+    let conversationLink = "";
+    const linkEl = item.querySelector('.conversation-list-item__link');
+    if (linkEl) {
+      const href = linkEl.getAttribute("href") || "";
+      const snMatch = href.match(/\/sales\/inbox\/([^/?]+)/);
+      if (snMatch) {
+        threadId = threadId || snMatch[1];
+        conversationLink = "https://www.linkedin.com/sales/inbox/" + (threadId || snMatch[1]);
+      }
+    }
+    if (!conversationLink && threadId) {
+      conversationLink = "https://www.linkedin.com/sales/inbox/" + threadId;
+    }
+
+    // No profile links available in SN list items
+    const profileUrl = "";
+
+    // No unread badge elements found in SN
+    const unread = 0;
+
+    // Extract campaign code from snippet or full text
+    let campaign = null;
+    const allText = lines.join(" ");
+    const campMatch = allText.match(CAMPAIGN_PATTERN);
+    if (campMatch) {
+      campaign = campMatch[1].toUpperCase();
+    }
+    if (!campaign && snippet) {
+      const snippetMatch = snippet.match(CAMPAIGN_PATTERN);
+      if (snippetMatch) campaign = snippetMatch[1].toUpperCase();
+    }
+
+    const conv = { name, snippet, lastSender, date, unread, profileUrl };
+    const classification = classify(conv);
+
+    return {
+      ...conv,
+      status: classification.status,
+      reason: classification.reason,
+      threadId,
+      conversationLink,
+      campaign,
+      source: "sales-navigator",
+      collectedAt: new Date().toISOString(),
+    };
+  }
+
+  // Scroll the LinkedIn Messaging conversation list to load all items
   async function scrollConversationList() {
     const listEl = document.querySelector(".msg-conversations-container__conversations-list");
     if (!listEl) {
@@ -273,13 +374,59 @@
     }
   }
 
+  // Scroll the Sales Navigator inbox list to load all items
+  async function scrollSNConversationList() {
+    // Find the scrollable container for SN inbox
+    const listItems = document.querySelectorAll('.conversation-list-item');
+    if (!listItems.length) {
+      console.log("[Pulse] Sales Navigator conversation list not found");
+      return;
+    }
+
+    // Find the scroll container (parent of the list items)
+    const scrollContainer = listItems[0].closest('[class*="conversation-list"]') ||
+                            listItems[0].parentElement;
+    if (!scrollContainer) {
+      console.log("[Pulse] Sales Navigator scroll container not found");
+      return;
+    }
+
+    let previousCount = 0;
+    let attempts = 0;
+
+    while (attempts < MAX_SCROLL_ATTEMPTS) {
+      const items = document.querySelectorAll('.conversation-list-item');
+      const currentCount = items.length;
+
+      if (currentCount === previousCount && attempts > 2) {
+        console.log(`[Pulse] No more SN conversations to load. Total: ${currentCount}`);
+        break;
+      }
+
+      previousCount = currentCount;
+
+      // Scroll the container
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+      attempts++;
+      await sleep(SCROLL_DELAY);
+
+      // Update progress via message to popup
+      chrome.runtime.sendMessage({
+        type: "SCAN_PROGRESS",
+        count: currentCount,
+        attempt: attempts,
+      });
+    }
+  }
+
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  // Main collection function
+  // Main collection function — LinkedIn Messaging
   async function collectAllConversations() {
-    console.log("[Pulse] Starting conversation collection...");
+    console.log("[Pulse] Starting LinkedIn Messaging conversation collection...");
 
     // First scroll to load all conversations
     await scrollConversationList();
@@ -295,31 +442,75 @@
       }
     });
 
-    console.log(`[Pulse] Collected ${conversations.length} conversations`);
+    console.log(`[Pulse] Collected ${conversations.length} LinkedIn Messaging conversations`);
     return conversations;
   }
 
-  // Listen for messages from popup
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "START_COLLECTION") {
-      collectAllConversations().then((conversations) => {
-        sendResponse({ success: true, conversations });
-      });
-      return true; // Keep channel open for async response
-    }
+  // Main collection function — Sales Navigator
+  async function collectAllSNConversations() {
+    console.log("[Pulse] Starting Sales Navigator conversation collection...");
 
-    if (message.type === "QUICK_SCAN") {
-      // Fast scan without scrolling - just what's visible
+    // First scroll to load all conversations
+    await scrollSNConversationList();
+
+    // Now extract all
+    const items = document.querySelectorAll('.conversation-list-item');
+    const conversations = [];
+
+    items.forEach((item) => {
+      const data = extractSNConversation(item);
+      if (data) {
+        conversations.push(data);
+      }
+    });
+
+    console.log(`[Pulse] Collected ${conversations.length} Sales Navigator conversations`);
+    return conversations;
+  }
+
+  // Quick scan — no scrolling, just visible items
+  function quickScan() {
+    if (isSalesNavigator) {
+      const items = document.querySelectorAll('.conversation-list-item');
+      const conversations = [];
+      items.forEach((item) => {
+        const data = extractSNConversation(item);
+        if (data) conversations.push(data);
+      });
+      return conversations;
+    } else {
       const items = document.querySelectorAll("li.msg-conversation-listitem");
       const conversations = [];
       items.forEach((item) => {
         const data = extractConversation(item);
         if (data) conversations.push(data);
       });
+      return conversations;
+    }
+  }
+
+  // Listen for messages from popup
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "START_COLLECTION") {
+      if (isSalesNavigator) {
+        collectAllSNConversations().then((conversations) => {
+          sendResponse({ success: true, conversations });
+        });
+      } else {
+        collectAllConversations().then((conversations) => {
+          sendResponse({ success: true, conversations });
+        });
+      }
+      return true; // Keep channel open for async response
+    }
+
+    if (message.type === "QUICK_SCAN") {
+      // Fast scan without scrolling - just what's visible
+      const conversations = quickScan();
       sendResponse({ success: true, conversations });
       return true;
     }
   });
 
-  console.log("[Pulse] LinkedIn Collector content script loaded");
+  console.log(`[Pulse] LinkedIn Collector content script loaded (${isSalesNavigator ? 'Sales Navigator' : 'LinkedIn Messaging'} mode)`);
 })();
