@@ -7,7 +7,7 @@ export async function onRequestPatch({ params, request, env }) {
   try {
     const name = decodeURIComponent(params.name);
     const body = await request.json();
-    const { status, note } = body;
+    const { status, note, focus, done } = body;
 
     if (status && !['Red', 'Orange', 'Green'].includes(status)) {
       return json({ error: 'Status must be Red, Orange, or Green' }, 400);
@@ -26,6 +26,13 @@ export async function onRequestPatch({ params, request, env }) {
     }
     if (note !== undefined) {
       msg.note = note;
+    }
+    if (focus !== undefined) {
+      msg.focus = !!focus;
+    }
+    if (done !== undefined) {
+      msg.done = !!done;
+      msg.doneAt = done ? new Date().toISOString() : null;
     }
     msg.updatedAt = new Date().toISOString();
 
