@@ -470,7 +470,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.8.1</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.8.2</div>
   </div>
 </aside>
 
@@ -596,9 +596,9 @@
           <option value="all">Campaign: All</option>
         </select>
         <select class="sort-select" id="sort-select">
-          <option value="priority">Sort by priority</option>
-          <option value="date">Sort by date</option>
-          <option value="name">Sort by name</option>
+          <option value="followup">Follow-ups first</option>
+          <option value="date">Newest first</option>
+          <option value="name">Name</option>
         </select>
       </div>
 
@@ -890,7 +890,7 @@ function ballLabel(m) {
   if (st === "Green") return "their turn";
   return "closed";
 }
-let currentSort = "date";
+let currentSort = "followup";
 let currentCampaignFilter = "all";
 let campaignMetric = "response";
 let searchQuery = "";
