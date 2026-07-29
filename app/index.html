@@ -470,7 +470,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.8.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.8.1</div>
   </div>
 </aside>
 
@@ -988,14 +988,32 @@ function getWeekKey(d) {
   return date.getFullYear() + "-W" + String(weekNum).padStart(2, "0");
 }
 
+// Robustly parse a stored date. LinkedIn timestamps like "Jul 10" have NO year,
+// and new Date("Jul 10") wrongly defaults to 2001. Assume the current year for
+// year-less strings (rolling back a year only if that lands in the future).
+function parseMsgDate(d) {
+  if (!d) return null;
+  var s = String(d);
+  var dt = new Date(s);
+  if (isNaN(dt.getTime())) return null;
+  if (!/\d{4}/.test(s)) {
+    var now = new Date();
+    dt.setFullYear(now.getFullYear());
+    if (dt.getTime() > now.getTime() + 2 * 86400000) dt.setFullYear(now.getFullYear() - 1);
+  }
+  return dt;
+}
+
 function getMonthKey(d) {
-  const date = new Date(d);
+  const date = parseMsgDate(d);
+  if (!date) return "Unknown";
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return months[date.getMonth()] + " " + date.getFullYear();
 }
 
 function getMonthSortKey(d) {
-  const date = new Date(d);
+  const date = parseMsgDate(d);
+  if (!date) return 0;
   return date.getFullYear() * 100 + date.getMonth();
 }
 
