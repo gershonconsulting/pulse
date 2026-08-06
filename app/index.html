@@ -470,7 +470,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.9.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.10.0</div>
   </div>
 </aside>
 
@@ -572,7 +572,9 @@
       <div class="toolbar">
         <div class="filter-tabs" id="filter-tabs">
           <button class="filter-tab active" data-filter="all">All <span class="badge" id="badge-all"></span></button>
-          <button class="filter-tab" data-filter="Red">Red <span class="badge" id="badge-red"></span></button>
+          <button class="filter-tab" data-filter="Red" title="Prospect replied and it's your turn (not yet handled)">Follow-up <span class="badge" id="badge-red"></span></button>
+          <button class="filter-tab" data-filter="focus" title="Only conversations you starred">&#9733; Starred <span class="badge" id="badge-focus"></span></button>
+          <button class="filter-tab" data-filter="done" title="Only conversations you checked as handled">&#10003; Checked <span class="badge" id="badge-done"></span></button>
           <button class="filter-tab" data-filter="Orange">Orange <span class="badge" id="badge-orange"></span></button>
           <button class="filter-tab" data-filter="Green">Green <span class="badge" id="badge-green"></span></button>
         </div>
@@ -841,7 +843,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v4.9.0" readonly>
+            <input type="text" value="v4.10.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Extension Version</label>
@@ -923,10 +925,17 @@ function isRealThread(link) {
 // LinkedIn search so the element is never dead. Exact links appear after a scan.
 function personLink(m) {
   if (m.profileUrl) return m.profileUrl;
+  // No captured profile? Open the actual conversation we DID collect rather
+  // than a useless blind people-search by name.
+  if (isRealThread(m.conversationLink)) return m.conversationLink;
+  if (m.conversationLink) return m.conversationLink;
   return "https://www.linkedin.com/search/results/people/?keywords=" + encodeURIComponent(m.name || "");
 }
 function threadLink(m) {
+  if (isRealThread(m.conversationLink)) return m.conversationLink;
   if (m.conversationLink) return m.conversationLink;
+  // Fall back to the captured profile before ever resorting to a name search.
+  if (m.profileUrl) return m.profileUrl;
   return "https://www.linkedin.com/messaging/?searchString=" + encodeURIComponent(m.name || "");
 }
 
@@ -971,12 +980,17 @@ function extractCampaign(m) {
 }
 
 function recountStats(msgs) {
-  const s = { red: 0, orange: 0, green: 0, total: msgs.length };
+  const s = { red: 0, orange: 0, green: 0, total: msgs.length, focus: 0, done: 0, followup: 0 };
   msgs.forEach(m => {
     const st = normalizeStatus(m.status).toLowerCase();
     if (st === "red") s.red++;
     else if (st === "orange") s.orange++;
     else if (st === "green") s.green++;
+    if (m.focus) s.focus++;
+    if (m.done) s.done++;
+    // "Follow-up needed" = the prospect's turn (Red) AND not marked handled.
+    // A conversation you answered is Green (not Red); a checked one is done.
+    if (st === "red" && !m.done) s.followup++;
   });
   return s;
 }
@@ -1193,21 +1207,23 @@ async function loadAllData() {
 
 function updateDashboard(sData) {
   // Stat cards
-  document.getElementById("stat-red").textContent = statsData.red;
+  document.getElementById("stat-red").textContent = statsData.followup;
   document.getElementById("stat-orange").textContent = statsData.orange;
   document.getElementById("stat-green").textContent = statsData.green;
   document.getElementById("stat-total").textContent = statsData.total;
 
   // Filter badges
   document.getElementById("badge-all").textContent = statsData.total;
-  document.getElementById("badge-red").textContent = statsData.red;
+  document.getElementById("badge-red").textContent = statsData.followup;
   document.getElementById("badge-orange").textContent = statsData.orange;
   document.getElementById("badge-green").textContent = statsData.green;
+  var bf = document.getElementById("badge-focus"); if (bf) bf.textContent = statsData.focus;
+  var bd = document.getElementById("badge-done"); if (bd) bd.textContent = statsData.done;
 
-  // Nav badge
+  // Nav badge (only conversations still needing a reply)
   const navBadge = document.getElementById("nav-badge-red");
-  if (statsData.red > 0) {
-    navBadge.textContent = statsData.red;
+  if (statsData.followup > 0) {
+    navBadge.textContent = statsData.followup;
     navBadge.style.display = "inline-block";
   } else {
     navBadge.style.display = "none";
@@ -1477,8 +1493,15 @@ function filterMessages() {
     msgs = msgs.filter(m => platformOf(m) === currentPlatform);
   }
 
-  // Status filter
-  if (currentFilter !== "all") {
+  // Status / flag filter
+  if (currentFilter === "focus") {
+    msgs = msgs.filter(m => m.focus);            // starred only
+  } else if (currentFilter === "done") {
+    msgs = msgs.filter(m => m.done);             // checked / handled only
+  } else if (currentFilter === "Red") {
+    // Follow-up = their turn AND not yet handled. Checked ones drop out.
+    msgs = msgs.filter(m => normalizeStatus(m.status) === "Red" && !m.done);
+  } else if (currentFilter !== "all") {
     msgs = msgs.filter(m => normalizeStatus(m.status) === currentFilter);
   }
 
