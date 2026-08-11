@@ -111,15 +111,27 @@ export async function onRequestPost({ request, env }) {
         if (statusHistory.length > 20) statusHistory = statusHistory.slice(-20);
       }
 
-      existingByName.set(conv.name, {
+      const merged = {
         ...conv,
         scanId: scan.id,
         updatedAt: now,
         previousStatus: prevStatus,
         statusHistory,
         firstSeenAt: prev ? (prev.firstSeenAt || prev.updatedAt || now) : now,
-        ...(prev && prev.manualStatus ? { manualStatus: prev.manualStatus } : {}),
-      });
+      };
+      if (prev) {
+        // Preserve the user's manual work across re-syncs — a fresh scan must
+        // never wipe a manual status override, star (focus), check (done), or note.
+        if (prev.manualStatus) { merged.manualStatus = prev.manualStatus; merged.status = prev.manualStatus; }
+        if (prev.focus !== undefined) merged.focus = prev.focus;
+        if (prev.done !== undefined) merged.done = prev.done;
+        if (prev.doneAt !== undefined) merged.doneAt = prev.doneAt;
+        if (prev.note !== undefined) merged.note = prev.note;
+        // Keep a previously-captured location if this scan didn't find one.
+        if (!merged.city && prev.city) merged.city = prev.city;
+        if (!merged.country && prev.country) merged.country = prev.country;
+      }
+      existingByName.set(conv.name, merged);
     }
     data.messages = Array.from(existingByName.values());
 
