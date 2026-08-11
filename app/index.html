@@ -424,7 +424,7 @@
 <body>
 
 <!-- Extension version warning — red banner when the installed extension is out of date -->
-<div id="ext-version-banner" style="display:none;background:#dc2626;color:#fff;padding:11px 20px;text-align:center;font-size:14px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.15);position:relative;z-index:1000;">
+<div id="ext-version-banner" style="display:none;background:#dc2626;color:#fff;padding:11px 20px;text-align:center;font-size:14px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.15);position:fixed;top:0;left:0;right:0;width:100%;box-sizing:border-box;z-index:3000;">
   <span id="ext-version-msg"></span>
   <a id="ext-version-link" href="/pulse-extension.zip" download="Pulse-LinkedIn-Extension-v1.15.1.zip" style="color:#fff;text-decoration:underline;margin-left:10px;font-weight:700;">Download the latest &#8595;</a>
 </div>
@@ -476,7 +476,7 @@
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.11.5</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v4.11.6</div>
   </div>
 </aside>
 
@@ -849,7 +849,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v4.11.5" readonly>
+            <input type="text" value="v4.11.6" readonly>
           </div>
           <div class="settings-form-group">
             <label>Extension Version</label>
@@ -912,8 +912,10 @@ function checkExtVersion(installed, isFallback) {
     msg.textContent = '⚠ Your Pulse extension is v' + installed + ' — the latest is v' + LATEST_EXT_VERSION + '. Update it for the newest features and fixes'
       + (isFallback ? ' (detected from your last sync).' : '.');
     banner.style.display = 'block';
+    document.body.style.paddingTop = (banner.offsetHeight || 46) + 'px'; // reserve space for the fixed banner
   } else if (!isFallback) {
     banner.style.display = 'none';
+    document.body.style.paddingTop = '';
   }
 }
 (function () {
