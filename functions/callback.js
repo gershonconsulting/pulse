@@ -6,13 +6,15 @@
 // 1. Validate the CSRF state cookie.
 // 2. Exchange the authorization code for an access token (client secret used ONLY here).
 // 3. Read the identity from LinkedIn's userinfo endpoint.
-// 4. Check the email against the ALLOWLIST env var (invite-only, fails closed).
+// 4. Check the email against the client registry + ALLOWLIST env var (invite-only,
+//    fails closed). See functions/_admin.js — /admin manages the registry.
 // 5. Issue the signed HMAC session cookie and land the user on the dashboard.
 
 import {
-  sign, parseCookies, buildCookie, clearCookie, safeEqual, isAllowed,
+  sign, parseCookies, buildCookie, clearCookie, safeEqual,
   COOKIE_NAME, STATE_COOKIE, SESSION_MAX_AGE,
 } from './_session.js';
+import { resolveAccess, touchUser } from './_admin.js';
 
 function bounce(url, params, extraHeaders) {
   const dest = new URL('/', url);
@@ -79,17 +81,22 @@ export async function onRequestGet({ request, env }) {
 
   const email = String(who.email || '').toLowerCase();
 
-  // --- 4. Invite-only gate ---
-  if (!isAllowed(email, env)) {
-    // Echo the rejected address back so the admin knows exactly what to add to ALLOWLIST.
-    return bounce(url, { denied: '1', e: email || 'unknown' });
+  // --- 4. Invite-only gate (client registry, then ALLOWLIST escape hatch) ---
+  const access = await resolveAccess(email, env);
+  if (!access.allowed) {
+    // Echo the rejected address back so the admin knows exactly who to add in /admin.
+    return bounce(url, { denied: '1', e: email || 'unknown', reason: access.reason });
   }
+  // Best-effort last-seen stamp for the admin console.
+  await touchUser(env, email);
 
   // --- 5. Session ---
   const now = Date.now();
   const token = await sign({
     sub: who.sub,
     email,
+    clientId: access.client ? access.client.id : null,
+    admin: !!access.admin,
     name: who.name || [who.given_name, who.family_name].filter(Boolean).join(' ') || email,
     picture: who.picture || null,
     iat: now,
