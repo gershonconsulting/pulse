@@ -546,6 +546,12 @@
       <span class="nav-icon">&#9881;</span>
       <span>Settings</span>
     </button>
+    <!-- Super-admins only. Revealed by paintUser() when /api/me reports isAdmin;
+         the server gates /admin independently, so hiding this is cosmetic. -->
+    <a class="nav-item" id="nav-admin" href="/admin" style="display:none">
+      <span class="nav-icon">&#128737;</span>
+      <span>Admin</span>
+    </a>
   </nav>
   <div class="sidebar-footer">
     <div class="user-chip" id="user-chip" style="display:none">
@@ -558,7 +564,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.1.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.2.0</div>
   </div>
 </aside>
 
@@ -1051,7 +1057,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.1.0" readonly>
+            <input type="text" value="v5.2.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1121,6 +1127,11 @@ const API_BASE = window.location.origin;
     chip.style.display = 'flex';
   }
 
+  function paintAdmin(me) {
+    var link = document.getElementById('nav-admin');
+    if (link && me && me.isAdmin) link.style.display = 'flex';
+  }
+
   window.__PULSE_ME = null;
 
   _fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
@@ -1130,9 +1141,10 @@ const API_BASE = window.location.origin;
       window.__PULSE_ME = me;
       reveal();
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { paintUser(me.user); });
+        document.addEventListener('DOMContentLoaded', function () { paintUser(me.user); paintAdmin(me); });
       } else {
         paintUser(me.user);
+        paintAdmin(me);
       }
     })
     .catch(function () {
@@ -1871,7 +1883,9 @@ function svgLineChart(data, width, height) {
 
 
 // ─── NAVIGATION ───
-document.querySelectorAll('.nav-item').forEach(item => {
+// [data-page] only — the Admin entry is a real <a href="/admin"> that navigates away
+// and has no in-page view to switch to.
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
   item.addEventListener('click', () => {
     const page = item.dataset.page;
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
