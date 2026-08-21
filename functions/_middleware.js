@@ -21,7 +21,7 @@
 // routes stay locked rather than falling through to the data.
 
 import { getSession, safeEqual } from './_session.js';
-import { readAdminStore, findClientByToken, isAdminEmail } from './_admin.js';
+import { readAdminStore, findClientByToken, findClientByEmail, isAdminEmail } from './_admin.js';
 
 // Paths anyone may reach without a session.
 const PUBLIC_PATHS = new Set([
@@ -114,10 +114,20 @@ export async function onRequest(context) {
         headers: { Location: new URL('/app.html', url).toString(), 'Cache-Control': 'no-store' },
       });
     }
+    // The cookie carries the clientId stamped at sign-in. If someone was added to
+    // a client AFTER they signed in, that cookie still says null — which would have
+    // pointed them at the DEFAULT tenant (Gershon's own data). Re-resolve from the
+    // registry in that case so a 30-day-old cookie can never cross tenants.
+    let clientId = session.clientId || null;
+    if (!clientId) {
+      const store = await readAdminStore(env);
+      const c = findClientByEmail(store, session.email);
+      if (c && c.status !== 'suspended') clientId = c.id;
+    }
     context.data = Object.assign({}, context.data, {
       auth: 'session',
       session,
-      clientId: session.clientId || null,
+      clientId,
     });
     return next();
   }
