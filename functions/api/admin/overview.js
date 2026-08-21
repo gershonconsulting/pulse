@@ -1,6 +1,7 @@
 // functions/api/admin/overview.js
 // GET /api/admin/overview — the numbers the admin landing page shows.
-// Deliberately cheap: two KV reads, no per-client fan-out.
+// Since data isolation landed (2026-08-21) each client has its own `data:<id>` key,
+// so this fans out one cheap KV read per client on top of the default tenant.
 
 import { readAdminStore } from '../../_admin.js';
 import { readData } from '../_shared.js';
@@ -13,6 +14,25 @@ export async function onRequestGet({ env, data }) {
 
   let dataStore = { scans: [], messages: [] };
   try { dataStore = await readData(env.PULSE_KV); } catch (e) { /* registry still renders */ }
+
+  // Per-tenant conversation counts, so the console shows real numbers instead of
+  // repeating Gershon's own store for every client.
+  const perClient = [];
+  for (const c of (store.clients || [])) {
+    try {
+      const d = await readData(env.PULSE_KV, c.id);
+      const last = (d.scans && d.scans[0]) || null;
+      perClient.push({
+        id: c.id,
+        name: c.name,
+        conversations: (d.messages || []).length,
+        red: (d.messages || []).filter(m => m.status === 'Red').length,
+        lastScanAt: last ? last.timestamp : null,
+      });
+    } catch (e) {
+      perClient.push({ id: c.id, name: c.name, conversations: null, red: null, lastScanAt: null });
+    }
+  }
 
   const clients = store.clients || [];
   const byStatus = { trial: 0, active: 0, suspended: 0 };
@@ -34,7 +54,9 @@ export async function onRequestGet({ env, data }) {
       withToken: clients.filter(c => !!c.extensionToken).length,
       byStatus,
     },
+    perClient,
     platform: {
+      // The DEFAULT tenant (KV key `data`) — Gershon's own store.
       conversations: messages.length,
       red: messages.filter(m => m.status === 'Red').length,
       lastScanAt: lastScan ? lastScan.timestamp : null,
