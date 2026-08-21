@@ -4,7 +4,7 @@
 // Both the marketing homepage and the dashboard call this on load.
 
 import { getSession, clearCookie, COOKIE_NAME } from '../_session.js';
-import { resolveAccess } from '../_admin.js';
+import { resolveAccess, trialDaysLeft } from '../_admin.js';
 
 const NO_STORE = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
@@ -32,7 +32,15 @@ export async function onRequestGet({ request, env }) {
     // revoking admin takes effect immediately instead of after the 30-day expiry.
     isAdmin: !!access.admin,
     client: access.client
-      ? { id: access.client.id, name: access.client.name, status: access.client.status, plan: access.client.plan }
+      ? {
+          id: access.client.id,
+          name: access.client.name,
+          status: access.client.status,
+          plan: access.client.plan,
+          // Trial clock, so the dashboard can show "6 days left" without a second call.
+          trialEndsAt: access.client.trialEndsAt || null,
+          trialDaysLeft: trialDaysLeft(access.client),
+        }
       : null,
     user: {
       sub: session.sub,
