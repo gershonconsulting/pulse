@@ -30,6 +30,13 @@ import { safeEqual } from './_session.js';
 export const ADMIN_KEY = 'admin';
 const AUDIT_MAX = 500;
 
+// SELF-ENROLLMENT (2026-08-21): signing in with LinkedIn creates the tenant. There is
+// no invite step — the first sign-in for an unknown email provisions a client, marks it
+// `trial`, stamps trialEndsAt TRIAL_DAYS out and issues its own collector token.
+// Set the env var SELF_ENROLL=off to close the door again (existing clients keep working).
+export const TRIAL_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export const CLIENT_STATUSES = ['trial', 'active', 'suspended'];
 export const USER_ROLES = ['owner', 'member'];
 
@@ -137,12 +144,30 @@ export function findClientByEmail(store, email) {
   return (store.clients || []).find(c => c.users.some(u => u.email === e)) || null;
 }
 
-/** The client an extension bearer token belongs to. Suspended clients are refused. */
+/** True once a `trial` client is past its trialEndsAt. Other statuses never expire. */
+export function isTrialExpired(client) {
+  if (!client || client.status !== 'trial' || !client.trialEndsAt) return false;
+  const ends = Date.parse(client.trialEndsAt);
+  return Number.isFinite(ends) && Date.now() > ends;
+}
+
+/** Whole days left in the trial (0 once it lapses, null when there is no trial clock). */
+export function trialDaysLeft(client) {
+  if (!client || client.status !== 'trial' || !client.trialEndsAt) return null;
+  const ends = Date.parse(client.trialEndsAt);
+  if (!Number.isFinite(ends)) return null;
+  return Math.max(0, Math.ceil((ends - Date.now()) / DAY_MS));
+}
+
+/**
+ * The client an extension bearer token belongs to. Suspended clients AND lapsed
+ * trials are refused, so collection stops at the same moment dashboard access does.
+ */
 export function findClientByToken(store, token) {
   const t = String(token || '').trim();
   if (!t) return null;
   return (store.clients || []).find(
-    c => c.extensionToken && c.status !== 'suspended' && safeEqual(c.extensionToken, t)
+    c => c.extensionToken && c.status !== 'suspended' && !isTrialExpired(c) && safeEqual(c.extensionToken, t)
   ) || null;
 }
 
@@ -188,10 +213,70 @@ export async function resolveAccess(email, env) {
     if (client.status === 'suspended') {
       return { allowed: false, admin: false, client, reason: 'suspended' };
     }
+    if (isTrialExpired(client)) {
+      return { allowed: false, admin: false, client, reason: 'trial-expired' };
+    }
     return { allowed: true, admin: false, client, reason: 'client' };
   }
 
+  // Unknown email. `not-invited` is what tells functions/callback.js to self-enroll.
   return { allowed: false, admin: false, client: null, reason: 'not-invited' };
+}
+
+/** Is open self-enrollment switched on? Default ON; env SELF_ENROLL=off closes it. */
+export function selfEnrollEnabled(env) {
+  const v = String((env && env.SELF_ENROLL) || 'on').trim().toLowerCase();
+  return v !== 'off' && v !== '0' && v !== 'false' && v !== 'no';
+}
+
+/**
+ * Provision a brand-new tenant for someone signing in with LinkedIn for the first time.
+ * Idempotent: if a client already holds this email (a double-click, or a race between
+ * two tabs) the existing one is returned untouched. Returns null when self-enrollment
+ * is off, the email is unusable, or KV is unavailable — the caller then denies access.
+ */
+export async function enrollUser(env, profile) {
+  const email = lc(profile && profile.email);
+  if (!email || !EMAIL_RE.test(email)) return null;
+  if (!env || !env.PULSE_KV) return null;
+  if (!selfEnrollEnabled(env)) return null;
+
+  const store = await readAdminStore(env);
+  const existing = findClientByEmail(store, email);
+  if (existing) return existing;
+
+  const now = new Date();
+  const label = String((profile && profile.name) || '').trim() || email.split('@')[0];
+  const client = {
+    id: newClientId(label, store),
+    name: label,
+    status: 'trial',
+    plan: 'trial',
+    createdAt: now.toISOString(),
+    trialEndsAt: new Date(now.getTime() + TRIAL_DAYS * DAY_MS).toISOString(),
+    notes: '',
+    // Their own reports go to them, not to the Gershon reporting address.
+    reportEmail: email,
+    extensionToken: newExtensionToken(),
+    tokenRotatedAt: now.toISOString(),
+    users: [{ email, role: 'owner', addedAt: now.toISOString(), lastSeenAt: now.toISOString() }],
+  };
+  store.clients.push(client);
+  audit(store, email, 'client.self-enroll', client.id, { trialDays: TRIAL_DAYS, trialEndsAt: client.trialEndsAt });
+  await writeAdminStore(env, store);
+  return normalizeClient(client);
+}
+
+/** Issue a fresh collector token for a client. Returns the new token, or null. */
+export async function rotateClientToken(env, clientId, actor) {
+  const store = await readAdminStore(env);
+  const client = findClient(store, clientId);
+  if (!client) return null;
+  client.extensionToken = newExtensionToken();
+  client.tokenRotatedAt = new Date().toISOString();
+  audit(store, actor, 'client.token-rotate', client.id, null);
+  await writeAdminStore(env, store);
+  return client.extensionToken;
 }
 
 /** Best-effort last-seen stamp. Never blocks or throws on the request path. */

@@ -14,7 +14,7 @@ import {
   sign, parseCookies, buildCookie, clearCookie, safeEqual,
   COOKIE_NAME, STATE_COOKIE, SESSION_MAX_AGE,
 } from './_session.js';
-import { resolveAccess, touchUser } from './_admin.js';
+import { resolveAccess, touchUser, enrollUser } from './_admin.js';
 
 function bounce(url, params, extraHeaders) {
   const dest = new URL('/', url);
@@ -81,10 +81,21 @@ export async function onRequestGet({ request, env }) {
 
   const email = String(who.email || '').toLowerCase();
 
-  // --- 4. Invite-only gate (client registry, then ALLOWLIST escape hatch) ---
-  const access = await resolveAccess(email, env);
+  // --- 4. Access gate: registry / ALLOWLIST, then SELF-ENROLLMENT ---
+  // An email nobody has seen before is not an error any more — it is a new signup.
+  // enrollUser provisions the tenant (trial, own KV store, own collector token) and
+  // the sign-in continues straight into the dashboard. A rejection here now only
+  // means the account is suspended or its trial lapsed.
+  let access = await resolveAccess(email, env);
+  if (!access.allowed && access.reason === 'not-invited') {
+    const created = await enrollUser(env, {
+      email,
+      name: who.name || [who.given_name, who.family_name].filter(Boolean).join(' '),
+    });
+    if (created) access = { allowed: true, admin: false, client: created, reason: 'self-enroll' };
+  }
   if (!access.allowed) {
-    // Echo the rejected address back so the admin knows exactly who to add in /admin.
+    // Echo the rejected address back so the homepage can name it in the banner.
     return bounce(url, { denied: '1', e: email || 'unknown', reason: access.reason });
   }
   // Best-effort last-seen stamp for the admin console.
