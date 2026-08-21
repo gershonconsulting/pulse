@@ -571,7 +571,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.3.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.4.0</div>
   </div>
 </aside>
 
@@ -929,8 +929,9 @@
         </div>
         <div class="ext-body">
           <div class="ext-note info" id="tok-note">
-            Paste this into the extension popup the first time you open it. It is what lets the
-            collector write into <b>your</b> Pulse account and nobody else's. Treat it like a password.
+            You should never need this. The extension picks it up from this page automatically as soon
+            as you are signed in. It is what lets the collector write into <b>your</b> Pulse account and
+            nobody else's &mdash; treat it like a password, and only copy it if support asks you to.
           </div>
           <div class="ext-path-row" style="margin-top:14px">
             <input type="text" id="tok-value" readonly value="Loading&hellip;">
@@ -1083,7 +1084,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.3.0" readonly>
+            <input type="text" value="v5.4.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1234,9 +1235,12 @@ const API_BASE = window.location.origin;
 // Warn (in red) when the installed Chrome extension is older than the latest.
 // The extension's content script announces its version on this page via a
 // data attribute + event; we fall back to the last synced version otherwise.
-const LATEST_EXT_VERSION = '1.17.0';
+const LATEST_EXT_VERSION = '1.18.0';
 // First extension version that exposes the page bridge (Sync Now from this page).
 const EXT_BRIDGE_MIN_VERSION = '1.17.0';
+// First extension version that will accept a token from this page — i.e. the one
+// that made the old "paste the token from Cloudflare" screen go away.
+const EXT_AUTOCONNECT_MIN_VERSION = '1.18.0';
 window.__extAnnounced = false;
 
 // Shared state for the Extension page. Declared here (above checkExtVersion) so an
@@ -1251,6 +1255,9 @@ window.extState = {
   testing: false,
   syncing: false,
   tested: false,
+  autoConnect: null,      // null | 'done' | 'too-old' | 'env' | 'no-token' | 'failed'
+  autoConnectError: null,
+  autoConnecting: false,
 };
 function cmpVer(a, b) {
   const pa = String(a || '0').split('.').map(Number), pb = String(b || '0').split('.').map(Number);
@@ -1376,6 +1383,9 @@ async function extRunSelfTest() {
     } catch (e) { extState.hasToken = null; }
   }
 
+  // 2b. No token? Give it one. This is what replaces the manual paste.
+  if (extState.hasToken === false) await extAutoConnect();
+
   // 3. Is the Pulse API reachable, and when did we last receive data?
   try {
     const r = await fetch(API_BASE + '/api/health', { cache: 'no-store' });
@@ -1401,6 +1411,47 @@ async function extRunSelfTest() {
   extState.tested = true;
   if (btn) { btn.disabled = false; btn.textContent = 'Run checks'; }
   extPaint();
+}
+
+// ─── Auto-connect ───
+// The whole point of v1.18.0: a signed-in user should never see a token.
+// /api/my-token is session-only, so this page — and only this page, with this
+// person's cookie — can read their collector token; we hand it straight to the
+// extension over the bridge. Runs on every load, but no-ops the moment the
+// collector already holds a token, so it costs one bridge round-trip.
+async function extAutoConnect() {
+  if (!extState.bridge) return;                 // nothing to hand it to
+  if (extState.hasToken !== false) return;      // already connected, or unknown
+  if (extState.autoConnecting) return;
+
+  // An older collector has no setToken action; say so rather than failing mutely.
+  if (cmpVer(extState.version, EXT_AUTOCONNECT_MIN_VERSION) < 0) {
+    extState.autoConnect = 'too-old';
+    return;
+  }
+
+  extState.autoConnecting = true;
+  try {
+    const r = await fetch(API_BASE + '/api/my-token', { credentials: 'same-origin', cache: 'no-store' });
+    const d = await r.json();
+
+    if (!d || !d.ok || !d.token) {
+      // 'env' = this account uses the shared EXTENSION_TOKEN from Cloudflare,
+      // which is deliberately never readable over the API.
+      extState.autoConnect = (d && d.managed === 'env') ? 'env' : 'no-token';
+      return;
+    }
+
+    await extAsk('setToken', { token: d.token }, 8000);
+    extState.hasToken = true;
+    extState.autoConnect = 'done';
+  } catch (e) {
+    extState.autoConnect = 'failed';
+    extState.autoConnectError = (e && e.message) || 'The extension refused the token.';
+  } finally {
+    extState.autoConnecting = false;
+    extPaint();
+  }
 }
 
 // ─── Rendering ───
@@ -1514,9 +1565,18 @@ function extPaintChecks() {
 
   // Token
   if (extState.hasToken === true) {
-    rows.push(extRow('🔑', 'ok', 'API access token', 'The collector holds a token and can write to Pulse', 'Set'));
+    rows.push(extState.autoConnect === 'done'
+      ? extRow('🔑', 'ok', 'API access token', 'Connected automatically from this page — nothing to copy or paste', 'Connected')
+      : extRow('🔑', 'ok', 'API access token', 'The collector holds a token and can write to Pulse', 'Set'));
   } else if (extState.hasToken === false) {
-    rows.push(extRow('🔑', 'error', 'API access token', 'Open the extension popup and paste the token from Cloudflare (EXTENSION_TOKEN)', 'Missing'));
+    const why = extState.autoConnect === 'too-old'
+      ? 'Update to v' + EXT_AUTOCONNECT_MIN_VERSION + ' below, then reload this page — it will connect itself'
+      : extState.autoConnect === 'env'
+        ? 'This account uses the shared Cloudflare token (EXTENSION_TOKEN) — paste it in the extension popup once'
+        : extState.autoConnect === 'failed'
+          ? 'Could not hand the token over: ' + esc(extState.autoConnectError || '') + ' — reload this page to retry'
+          : 'Reload this page while signed in and the extension will be connected automatically';
+    rows.push(extRow('🔑', extState.autoConnect === 'env' ? 'warn' : 'error', 'API access token', why, 'Missing'));
   } else {
     rows.push(extRow('🔑', 'pending', 'API access token', 'Can only be checked once the extension is connected to this page', 'Unknown'));
   }
@@ -1717,11 +1777,22 @@ async function tokLoad(force) {
 
 async function tokRotate() {
   const btn = document.getElementById('tok-btn-rotate');
-  if (!window.confirm('Issue a new access token?\n\nThe current one stops working straight away, and you will have to paste the new one into the extension popup.')) return;
+  if (!window.confirm('Issue a new access token?\n\nThe current one stops working straight away. Your extension is handed the new one automatically.')) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Rotating\u2026'; }
   try {
     const r = await fetch(API_BASE + '/api/my-token', { method: 'POST', credentials: 'same-origin' });
-    tokPaint(await r.json());
+    const d = await r.json();
+    tokPaint(d);
+    // Push the replacement straight into the collector — otherwise rotating would
+    // break the very sync the user just secured, and they would be back to pasting.
+    if (d && d.ok && d.token && extState.bridge && cmpVer(extState.version, EXT_AUTOCONNECT_MIN_VERSION) >= 0) {
+      try {
+        await extAsk('setToken', { token: d.token }, 8000);
+        extState.hasToken = true;
+        extState.autoConnect = 'done';
+        extPaint();
+      } catch (e) { /* the checks row will show it as missing on the next run */ }
+    }
   } catch (e) {
     tokPaint(null);
   }
