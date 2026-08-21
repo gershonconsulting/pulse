@@ -1,9 +1,11 @@
 // functions/api/messages/[name].js
 // PATCH /api/messages/:name — manually override a message status
 
-import { json, readData, writeData } from '../_shared.js';
+import { json, readData, writeData, clientIdOf } from '../_shared.js';
 
-export async function onRequestPatch({ params, request, env }) {
+export async function onRequestPatch(context) {
+  const { params, request, env } = context;
+  const clientId = clientIdOf(context);
   try {
     const name = decodeURIComponent(params.name);
     const body = await request.json();
@@ -13,7 +15,7 @@ export async function onRequestPatch({ params, request, env }) {
       return json({ error: 'Status must be Red, Orange, or Green' }, 400);
     }
 
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     const msg = data.messages.find(m => m.name === name);
 
     if (!msg) {
@@ -36,7 +38,7 @@ export async function onRequestPatch({ params, request, env }) {
     }
     msg.updatedAt = new Date().toISOString();
 
-    await writeData(env.PULSE_KV, data);
+    await writeData(env.PULSE_KV, clientId, data);
     return json({ success: true, message: msg });
   } catch (err) {
     return json({ error: err.message }, 500);

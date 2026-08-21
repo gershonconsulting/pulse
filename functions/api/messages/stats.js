@@ -1,11 +1,12 @@
 // functions/api/messages/stats.js
 // GET /api/messages/stats — aggregated stats + recent scans
 
-import { json, readData } from '../_shared.js';
+import { json, readData, clientIdOf } from '../_shared.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet(context) {
+  const { env } = context;
   try {
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientIdOf(context));
 
     // Compute progress metrics from message statusHistory
     let totalTransitions = 0;
