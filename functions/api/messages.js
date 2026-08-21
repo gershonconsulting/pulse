@@ -3,11 +3,13 @@
 // POST /api/messages  — receive classified conversations from Chrome extension
 // DELETE /api/messages — clear all data
 
-import { json, readData, writeData } from './_shared.js';
+import { json, readData, writeData, clientIdOf } from './_shared.js';
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet(context) {
+  const { request, env } = context;
+  const clientId = clientIdOf(context);
   try {
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
@@ -56,7 +58,9 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const clientId = clientIdOf(context);
   try {
     const body = await request.json();
     const { conversations, scanMeta } = body;
@@ -65,7 +69,7 @@ export async function onRequestPost({ request, env }) {
       return json({ error: 'Missing conversations array' }, 400);
     }
 
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     const now = new Date().toISOString();
 
     // Record the scan
@@ -149,7 +153,7 @@ export async function onRequestPost({ request, env }) {
       details: transitions.slice(0, 50),  // store up to 50 individual transitions
     };
 
-    await writeData(env.PULSE_KV, data);
+    await writeData(env.PULSE_KV, clientId, data);
 
     return json({
       success: true,
@@ -163,22 +167,25 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-export async function onRequestDelete({ request, env }) {
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+  const clientId = clientIdOf(context);
   try {
     const url = new URL(request.url);
     const name = url.searchParams.get('name');
 
     if (name) {
       // Delete a single message by name
-      const data = await readData(env.PULSE_KV);
+      const data = await readData(env.PULSE_KV, clientId);
       const before = data.messages.length;
       data.messages = data.messages.filter(m => m.name !== name);
-      await writeData(env.PULSE_KV, data);
+      await writeData(env.PULSE_KV, clientId, data);
       return json({ success: true, deleted: before - data.messages.length, remaining: data.messages.length });
     }
 
-    // No name param = clear all (dangerous, keep for admin)
-    await writeData(env.PULSE_KV, { scans: [], messages: [] });
+    // No name param = clear all. Scoped to the CALLER'S tenant only — before
+    // 2026-08-21 this wiped the single shared store for everybody.
+    await writeData(env.PULSE_KV, clientId, { scans: [], messages: [] });
     return json({ success: true });
   } catch (err) {
     return json({ error: err.message }, 500);

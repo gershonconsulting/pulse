@@ -4,14 +4,16 @@
 // GET  /api/scan-status  -> current status { phase, count, total, updatedAt }
 // POST /api/scan-status  -> extension background worker reports progress
 
-import { json } from './_shared.js';
+import { json, scopedKey, clientIdOf } from './_shared.js';
 
-export async function onRequestGet({ env }) {
-  const raw = await env.PULSE_KV.get('scan-status', 'json');
+export async function onRequestGet(context) {
+  const { env } = context;
+  const raw = await env.PULSE_KV.get(scopedKey('scan-status', clientIdOf(context)), 'json');
   return json(raw || { phase: 'idle', count: 0, total: 0 });
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   const body = await request.json().catch(() => ({}));
   const status = {
     phase: body.phase || 'scanning',   // starting | scanning | capturing-links | done | idle
@@ -20,6 +22,6 @@ export async function onRequestPost({ request, env }) {
     updatedAt: new Date().toISOString(),
   };
   // Auto-expire after 1h so a crashed scan doesn't leave a stuck bar.
-  await env.PULSE_KV.put('scan-status', JSON.stringify(status), { expirationTtl: 3600 });
+  await env.PULSE_KV.put(scopedKey('scan-status', clientIdOf(context)), JSON.stringify(status), { expirationTtl: 3600 });
   return json({ ok: true });
 }

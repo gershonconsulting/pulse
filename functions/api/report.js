@@ -3,12 +3,28 @@
 // Sends to report@gershonconsulting.com with subject "[Platform] Report — [Date Range]"
 // Requires RESEND_API_KEY env var for email delivery
 
-import { json, readData } from './_shared.js';
+import { json, readData, clientIdOf } from './_shared.js';
+import { readAdminStore, findClient } from '../_admin.js';
 
-export async function onRequestPost({ request, env }) {
+// Where this tenant's report goes: the client's own reportEmail from /admin when
+// there is one, otherwise the Gershon convention address.
+async function reportRecipient(env, clientId) {
+  const fallback = env.REPORT_EMAIL || 'report@gershonconsulting.com';
+  if (!clientId) return fallback;
+  try {
+    const client = findClient(await readAdminStore(env), clientId);
+    return (client && client.reportEmail) ? client.reportEmail : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const clientId = clientIdOf(context);
   try {
     const body = await request.json().catch(() => ({}));
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     const now = new Date();
 
     // Compute stats
@@ -108,6 +124,8 @@ export async function onRequestPost({ request, env }) {
     // Generate HTML email
     const htmlEmail = generateEmailHtml(report);
 
+    const recipient = await reportRecipient(env, clientId);
+
     // Send email if RESEND_API_KEY is configured
     let emailSent = false;
     let emailError = null;
@@ -122,7 +140,7 @@ export async function onRequestPost({ request, env }) {
           },
           body: JSON.stringify({
             from: env.EMAIL_FROM || 'Pulse <pulse@gershon.ai>',
-            to: [env.REPORT_EMAIL || 'report@gershonconsulting.com'],
+            to: [recipient],
             subject: `Pulse LinkedIn Report — ${dateRange}`,
             html: htmlEmail,
             text: `Pulse LinkedIn Report — ${dateRange}\n\nPipeline: ${red.length} Red, ${orange.length} Orange, ${green.length} Green (${total} total)\nSources: LinkedIn Messaging (${linkedinMessages.length}), Sales Navigator (${salesNavMessages.length})\nProgress: ${treatedCount} treated, ${regressedCount} need attention again\n\nView full report: https://pulse.gershoncrm.com`,
@@ -148,7 +166,7 @@ export async function onRequestPost({ request, env }) {
       email: {
         sent: emailSent,
         error: emailError,
-        recipient: env.REPORT_EMAIL || 'report@gershonconsulting.com',
+        recipient,
         subject: `Pulse LinkedIn Report — ${dateRange}`,
       },
     });
@@ -158,9 +176,10 @@ export async function onRequestPost({ request, env }) {
 }
 
 // GET /api/report — return the latest report without sending email
-export async function onRequestGet({ env }) {
+export async function onRequestGet(context) {
+  const { env } = context;
   try {
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientIdOf(context));
     const now = new Date();
     const red = data.messages.filter(m => m.status === 'Red');
     const orange = data.messages.filter(m => m.status === 'Orange');

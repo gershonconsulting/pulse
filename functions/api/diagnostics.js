@@ -1,9 +1,11 @@
 // functions/api/diagnostics.js
 // GET /api/diagnostics — system health checks for Settings page
 
-import { json, readData } from './_shared.js';
+import { json, readData, clientIdOf } from './_shared.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet(context) {
+  const { env } = context;
+  const clientId = clientIdOf(context);
   const checks = {};
   const now = Date.now();
 
@@ -12,7 +14,7 @@ export async function onRequestGet({ env }) {
 
   // 2. KV Storage
   try {
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     checks.kv = {
       name: 'KV Storage',
       status: 'ok',
@@ -24,7 +26,7 @@ export async function onRequestGet({ env }) {
 
   // 3. Last Scan
   try {
-    const data = await readData(env.PULSE_KV);
+    const data = await readData(env.PULSE_KV, clientId);
     if (data.scans.length > 0) {
       const lastScan = data.scans[0];
       const scanTime = new Date(lastScan.timestamp).getTime();
