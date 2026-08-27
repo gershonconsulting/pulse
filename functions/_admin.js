@@ -21,9 +21,31 @@
 //     extensionToken, tokenRotatedAt,
 //     users: [{ email, role: 'owner'|'member', addedAt, lastSeenAt }]
 //   }],
+//   cohosts: [{
+//     id, name, linkedinUrl, linkedinSlug,
+//     email,                       // null until the invite is claimed
+//     status: 'invited'|'active'|'revoked',
+//     invite: { token, createdAt, expiresAt, usedAt } | null,
+//     createdAt, claimedAt, lastSeenAt, notes
+//   }],
 //   audit: [{ ts, actor, action, target, detail }],   // newest first, capped
 //   updatedAt
 // }
+//
+// ── COHOSTS (2026-08-27) ──────────────────────────────────────────────────────
+// A CoHost is an INTERNAL operator (e.g. Aina) who verifies the state of the
+// conversations our users manage. Unlike a client user, a CoHost belongs to NO
+// tenant of their own — they can switch their view to ANY client and work the
+// queue there. They can never reach /admin: the control plane stays super-admin
+// only, so a CoHost cannot create clients, read tokens or edit the registry.
+//
+// WHY AN INVITE LINK AND NOT AN EMAIL FIELD: admins identify people by their
+// LinkedIn profile URL, but LinkedIn's OpenID `userinfo` returns sub/name/email
+// and NEVER the vanity URL — the two cannot be matched server-side. So /admin
+// takes the profile URL for identification and mints a one-time invite link.
+// The FIRST LinkedIn sign-in through that link binds whatever email LinkedIn
+// reports to this record, permanently. That also side-steps the trap that locked
+// Olivier out in August: nobody has to guess which email a LinkedIn account uses.
 
 import { safeEqual } from './_session.js';
 
@@ -39,11 +61,22 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const CLIENT_STATUSES = ['trial', 'active', 'suspended'];
 export const USER_ROLES = ['owner', 'member'];
+export const COHOST_STATUSES = ['invited', 'active', 'revoked'];
+
+// How long an unclaimed CoHost invite link stays valid.
+export const INVITE_TTL_DAYS = 14;
+
+// Which tenant a CoHost (or a super-admin) is currently looking at. NOT a permission:
+// the root middleware only honours it after confirming the caller really is one of
+// those two, and re-validates the id against the registry on every request. Plain
+// (unsigned) on purpose — forging it gets an ordinary user precisely nothing.
+export const VIEW_COOKIE = 'pulse_view';
+export const VIEW_DEFAULT = '__default';
 
 const lc = (s) => String(s || '').trim().toLowerCase();
 
 function emptyStore() {
-  return { version: 1, clients: [], audit: [], updatedAt: null };
+  return { version: 1, clients: [], cohosts: [], audit: [], updatedAt: null };
 }
 
 /** Normalise anything KV hands back into a well-formed store. */
@@ -52,6 +85,9 @@ export function normalizeStore(raw) {
   return {
     version: 1,
     clients: Array.isArray(store.clients) ? store.clients.map(normalizeClient) : [],
+    // Absent on every store written before 2026-08-27 — normalise to [] so the
+    // registry keeps working without a migration.
+    cohosts: Array.isArray(store.cohosts) ? store.cohosts.map(normalizeCohost) : [],
     audit: Array.isArray(store.audit) ? store.audit.slice(0, AUDIT_MAX) : [],
     updatedAt: store.updatedAt || null,
   };
@@ -76,6 +112,48 @@ function normalizeClient(c) {
       addedAt: (u && u.addedAt) || null,
       lastSeenAt: (u && u.lastSeenAt) || null,
     })).filter(u => u.email) : [],
+  };
+}
+
+/** LinkedIn vanity slug out of any profile URL shape. '' when it is not one. */
+export function linkedinSlugOf(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  // Accept linkedin.com/in/<slug>, with or without scheme, www, locale subdomain,
+  // trailing slash or query string — admins paste all of these.
+  const m = raw.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
+  if (m) return decodeURIComponent(m[1]).toLowerCase();
+  // A bare slug typed on its own is fine too.
+  if (/^[a-z0-9\-_%]+$/i.test(raw)) return decodeURIComponent(raw).toLowerCase();
+  return '';
+}
+
+/** Canonical profile URL, so two pastes of the same person store identically. */
+export function normalizeLinkedInUrl(url) {
+  const slug = linkedinSlugOf(url);
+  return slug ? 'https://www.linkedin.com/in/' + slug + '/' : '';
+}
+
+function normalizeCohost(c) {
+  const h = (c && typeof c === 'object') ? c : {};
+  const inv = (h.invite && typeof h.invite === 'object') ? h.invite : null;
+  return {
+    id: String(h.id || ''),
+    name: String(h.name || h.id || ''),
+    linkedinUrl: String(h.linkedinUrl || ''),
+    linkedinSlug: String(h.linkedinSlug || linkedinSlugOf(h.linkedinUrl) || ''),
+    email: lc(h.email) || null,
+    status: COHOST_STATUSES.indexOf(h.status) !== -1 ? h.status : 'invited',
+    invite: inv && inv.token ? {
+      token: String(inv.token),
+      createdAt: inv.createdAt || null,
+      expiresAt: inv.expiresAt || null,
+      usedAt: inv.usedAt || null,
+    } : null,
+    createdAt: h.createdAt || null,
+    claimedAt: h.claimedAt || null,
+    lastSeenAt: h.lastSeenAt || null,
+    notes: String(h.notes || ''),
   };
 }
 
@@ -144,6 +222,165 @@ export function findClientByEmail(store, email) {
   return (store.clients || []).find(c => c.users.some(u => u.email === e)) || null;
 }
 
+/* ══ COHOSTS ══════════════════════════════════════════════════════════════════
+   Cross-tenant operators. See the store-shape note at the top of this file. */
+
+export function findCohost(store, id) {
+  return (store.cohosts || []).find(h => h.id === String(id)) || null;
+}
+
+/** The ACTIVE CoHost a signed-in email belongs to. Revoked records never match. */
+export function findCohostByEmail(store, email) {
+  const e = lc(email);
+  if (!e) return null;
+  return (store.cohosts || []).find(h => h.status === 'active' && h.email === e) || null;
+}
+
+/** A CoHost record for this email at ANY status — including revoked. Used to tell a
+ *  revoked operator apart from a stranger, so signing in denies them instead of
+ *  cheerfully provisioning them a brand-new trial tenant. */
+export function findCohostRecordByEmail(store, email) {
+  const e = lc(email);
+  if (!e) return null;
+  return (store.cohosts || []).find(h => h.email === e) || null;
+}
+
+/** Already-taken slug check, so the same person cannot be invited twice. */
+export function findCohostBySlug(store, slug) {
+  const sl = lc(slug);
+  if (!sl) return null;
+  return (store.cohosts || []).find(h => h.linkedinSlug === sl) || null;
+}
+
+/** True once an invite has been used or has passed its expiry. */
+export function isInviteSpent(invite) {
+  if (!invite || !invite.token) return true;
+  if (invite.usedAt) return true;
+  const ends = Date.parse(invite.expiresAt);
+  return Number.isFinite(ends) && Date.now() > ends;
+}
+
+/**
+ * The CoHost record a raw invite token belongs to — only while the invite is live
+ * and the record is still waiting to be claimed. Constant-time compare, because the
+ * token alone is enough to bind an identity.
+ */
+export function findCohostByInvite(store, token) {
+  const t = String(token || '').trim();
+  if (!t) return null;
+  return (store.cohosts || []).find(
+    h => h.status === 'invited' && h.invite && !isInviteSpent(h.invite) && safeEqual(h.invite.token, t)
+  ) || null;
+}
+
+/** `pci_` + 32 hex — a Pulse CoHost Invite. Single-use, expiring, unguessable. */
+export function newInviteToken() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return 'pci_' + hex;
+}
+
+/** A fresh invite object (used at creation and whenever an admin re-issues a link). */
+export function newInvite() {
+  const now = Date.now();
+  return {
+    token: newInviteToken(),
+    createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + INVITE_TTL_DAYS * DAY_MS).toISOString(),
+    usedAt: null,
+  };
+}
+
+/** Slug a CoHost name into a stable id, de-duplicated against existing CoHosts. */
+export function newCohostId(name, store) {
+  let base = lc(name).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
+  if (!base) base = 'cohost';
+  const taken = new Set((store.cohosts || []).map(h => h.id));
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 500; i++) {
+    const candidate = base + '-' + i;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return base + '-' + Date.now().toString(36);
+}
+
+/**
+ * Bind a LinkedIn identity to an invited CoHost. This is the whole point of the
+ * invite link: it is the ONLY moment we learn which email the person's LinkedIn
+ * account actually uses.
+ *
+ * Refuses when the token is spent/expired, or when that email is already spoken
+ * for — one email is one identity, exactly as it is for client users.
+ * Returns { ok, cohost, reason }.
+ */
+export async function claimCohostInvite(env, token, profile) {
+  const email = lc(profile && profile.email);
+  if (!env || !env.PULSE_KV) return { ok: false, reason: 'no-kv' };
+  if (!email || !EMAIL_RE.test(email)) return { ok: false, reason: 'bad-email' };
+
+  const store = await readAdminStore(env);
+  const cohost = findCohostByInvite(store, token);
+  if (!cohost) return { ok: false, reason: 'invalid-invite' };
+
+  // Already a CoHost under another record, or a member of a client? Refuse rather
+  // than give one email two identities that resolveAccess would have to guess between.
+  const otherCohost = (store.cohosts || []).find(h => h.id !== cohost.id && h.email === email);
+  if (otherCohost) return { ok: false, reason: 'email-taken' };
+  if (findClientByEmail(store, email)) return { ok: false, reason: 'email-is-client' };
+
+  const now = new Date().toISOString();
+  cohost.email = email;
+  cohost.status = 'active';
+  cohost.claimedAt = now;
+  cohost.lastSeenAt = now;
+  cohost.invite.usedAt = now;          // single use — the link is dead from here on
+  if (!cohost.name || cohost.name === cohost.id) {
+    cohost.name = String((profile && profile.name) || '').trim() || cohost.name;
+  }
+  audit(store, email, 'cohost.claim', cohost.id, { email });
+  await writeAdminStore(env, store);
+  return { ok: true, cohost: normalizeCohost(cohost) };
+}
+
+/** Best-effort last-seen stamp for a CoHost (mirrors touchUser for client users). */
+export async function touchCohost(env, email) {
+  try {
+    const e = lc(email);
+    if (!e || !env || !env.PULSE_KV) return;
+    const store = await readAdminStore(env);
+    const h = findCohostByEmail(store, e);
+    if (!h) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (String(h.lastSeenAt || '').slice(0, 10) === today) return;
+    h.lastSeenAt = new Date().toISOString();
+    await writeAdminStore(env, store);
+  } catch (e) { /* never let telemetry break sign-in */ }
+}
+
+/** The shape /admin receives. The live invite TOKEN is never included — only whether
+ *  a link is outstanding. Handing the raw token back on every list would turn a
+ *  read of the registry into a way to seize someone else's identity. */
+export function publicCohost(h) {
+  const live = h.invite && !isInviteSpent(h.invite);
+  return {
+    id: h.id,
+    name: h.name,
+    linkedinUrl: h.linkedinUrl,
+    linkedinSlug: h.linkedinSlug,
+    email: h.email,
+    status: h.status,
+    createdAt: h.createdAt,
+    claimedAt: h.claimedAt,
+    lastSeenAt: h.lastSeenAt,
+    notes: h.notes,
+    invitePending: !!live,
+    inviteExpiresAt: live ? h.invite.expiresAt : null,
+    inviteUsedAt: (h.invite && h.invite.usedAt) || null,
+  };
+}
+
 /** True once a `trial` client is past its trialEndsAt. Other statuses never expire. */
 export function isTrialExpired(client) {
   if (!client || client.status !== 'trial' || !client.trialEndsAt) return false;
@@ -191,36 +428,52 @@ export function isAdminEmail(email, env) {
 /**
  * The single source of truth for "may this email use Pulse?".
  *
- * Order: super-admin → env ALLOWLIST (legacy/escape hatch) → client registry.
+ * Order: super-admin → CoHost → env ALLOWLIST (legacy/escape hatch) → client registry.
  * Suspended clients are refused. Fails CLOSED: unknown email, no match, no access.
  *
- * Returns { allowed, admin, client, reason }.
+ * Returns { allowed, admin, cohost, client, reason }.
  */
 export async function resolveAccess(email, env) {
   const e = lc(email);
   const admin = isAdminEmail(e, env);
   const store = await readAdminStore(env);
   const client = findClientByEmail(store, e);
+  const cohost = findCohostByEmail(store, e);
 
-  if (admin) return { allowed: true, admin: true, client, reason: 'admin' };
+  if (admin) return { allowed: true, admin: true, cohost: null, client, reason: 'admin' };
+
+  // A CoHost has no tenant of their own — they view whichever client they select.
+  // Checked BEFORE the not-invited fall-through below so signing in can never
+  // self-enroll an operator as a client and strand them in an empty store.
+  if (cohost) {
+    return { allowed: true, admin: false, cohost, client: null, reason: 'cohost' };
+  }
+
+  // A REVOKED CoHost is not a stranger. Without this, `not-invited` below would send
+  // them down the self-enrollment path and hand the person we just cut off a shiny
+  // new trial tenant. Deny explicitly instead.
+  const revoked = findCohostRecordByEmail(store, e);
+  if (revoked && revoked.status === 'revoked') {
+    return { allowed: false, admin: false, cohost: null, client: null, reason: 'cohost-revoked' };
+  }
 
   const envAllow = envList(env && env.ALLOWLIST);
   if (e && (envAllow.indexOf('*') !== -1 || envAllow.indexOf(e) !== -1)) {
-    return { allowed: true, admin: false, client, reason: 'allowlist' };
+    return { allowed: true, admin: false, cohost: null, client, reason: 'allowlist' };
   }
 
   if (client) {
     if (client.status === 'suspended') {
-      return { allowed: false, admin: false, client, reason: 'suspended' };
+      return { allowed: false, admin: false, cohost: null, client, reason: 'suspended' };
     }
     if (isTrialExpired(client)) {
-      return { allowed: false, admin: false, client, reason: 'trial-expired' };
+      return { allowed: false, admin: false, cohost: null, client, reason: 'trial-expired' };
     }
-    return { allowed: true, admin: false, client, reason: 'client' };
+    return { allowed: true, admin: false, cohost: null, client, reason: 'client' };
   }
 
   // Unknown email. `not-invited` is what tells functions/callback.js to self-enroll.
-  return { allowed: false, admin: false, client: null, reason: 'not-invited' };
+  return { allowed: false, admin: false, cohost: null, client: null, reason: 'not-invited' };
 }
 
 /** Is open self-enrollment switched on? Default ON; env SELF_ENROLL=off closes it. */

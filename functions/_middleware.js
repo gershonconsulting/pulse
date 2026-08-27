@@ -13,6 +13,11 @@
 //   - The Chrome extension cannot hold a cookie, so it authenticates with a bearer
 //     token (header `X-Pulse-Token`, or `Authorization: Bearer …`): either the legacy
 //     shared EXTENSION_TOKEN, or a per-client token issued from /admin.
+//   - A COHOST (see functions/_admin.js) is an internal operator with no tenant of
+//     their own. They pick which client they are looking at; that choice rides in the
+//     `pulse_view` cookie and is re-validated against the registry on EVERY request,
+//     so the cookie is a preference, not a permission. Only a super-admin or an
+//     active CoHost can make it mean anything.
 //   - `/admin` and `/api/admin/*` are the control plane: signed-in SUPER-ADMINS only
 //     (ADMIN_EMAILS env var). A bearer token can never reach them, by design — a
 //     leaked collector token must not be able to create clients or read the registry.
@@ -20,14 +25,18 @@
 // Fails CLOSED: with SESSION_SECRET unset no session can ever verify, so protected
 // routes stay locked rather than falling through to the data.
 
-import { getSession, safeEqual } from './_session.js';
-import { readAdminStore, findClientByToken, findClientByEmail, isAdminEmail } from './_admin.js';
+import { getSession, safeEqual, parseCookies } from './_session.js';
+import {
+  readAdminStore, findClient, findClientByToken, findClientByEmail,
+  findCohostByEmail, isAdminEmail, VIEW_COOKIE, VIEW_DEFAULT,
+} from './_admin.js';
 
 // Paths anyone may reach without a session.
 const PUBLIC_PATHS = new Set([
   '/',
   '/index.html',
   '/callback',          // LinkedIn OAuth redirect target (registered in the LinkedIn app)
+  '/invite',            // CoHost invite link — the recipient is not signed in yet, by definition
   '/api/login',         // starts the OAuth dance
   '/api/logout',        // clearing a cookie needs no cookie
   '/api/me',            // returns 401 by design when signed out — the homepage/app both poll it
@@ -106,28 +115,81 @@ export async function onRequest(context) {
   // 3. Human: signed LinkedIn session cookie.
   const session = await getSession(request, env);
   if (session) {
+    const isAdmin = isAdminEmail(session.email, env);
+
     // 3a. The control plane needs more than a session — it needs super-admin.
-    if (isAdminSurface && !isAdminEmail(session.email, env)) {
+    //     A CoHost is NOT a super-admin: the registry, the tokens and the audit log
+    //     stay out of reach no matter which tenant they are viewing.
+    if (isAdminSurface && !isAdmin) {
       if (isApi) return forbiddenJson();
       return new Response(null, {
         status: 302,
         headers: { Location: new URL('/app.html', url).toString(), 'Cache-Control': 'no-store' },
       });
     }
+
     // The cookie carries the clientId stamped at sign-in. If someone was added to
     // a client AFTER they signed in, that cookie still says null — which would have
     // pointed them at the DEFAULT tenant (Gershon's own data). Re-resolve from the
     // registry in that case so a 30-day-old cookie can never cross tenants.
     let clientId = session.clientId || null;
+    let store = null;
     if (!clientId) {
-      const store = await readAdminStore(env);
+      store = await readAdminStore(env);
       const c = findClientByEmail(store, session.email);
       if (c && c.status !== 'suspended') clientId = c.id;
     }
+
+    // 3b. CoHost / super-admin tenant switching.
+    //     `session.cohost` is only a hint from a 30-day-old cookie — authority is the
+    //     LIVE registry. If the record was revoked or deleted since sign-in, the
+    //     session is refused here rather than quietly falling back to the default
+    //     tenant, which is Gershon's own data.
+    let cohost = null;
+    if (!isAdmin) {
+      if (!store) store = await readAdminStore(env);
+      cohost = findCohostByEmail(store, session.email);
+      if (session.cohost && !cohost) {
+        if (isApi) return unauthorizedJson();
+        return new Response(null, {
+          status: 302,
+          headers: { Location: new URL('/?denied=1&reason=cohost-revoked', url).toString(), 'Cache-Control': 'no-store' },
+        });
+      }
+    }
+
+    let viewingAs = null;
+    if (isAdmin || cohost) {
+      const wanted = String(parseCookies(request.headers.get('Cookie'))[VIEW_COOKIE] || '').trim();
+      if (wanted === VIEW_DEFAULT) {
+        clientId = null;
+        viewingAs = isAdmin ? 'admin' : 'cohost';
+      } else if (wanted) {
+        if (!store) store = await readAdminStore(env);
+        const target = findClient(store, wanted);
+        // An unknown or stale id falls back to the caller's own tenant rather than
+        // erroring — a deleted client must never strand an operator on a blank app.
+        if (target) {
+          clientId = target.id;
+          viewingAs = isAdmin ? 'admin' : 'cohost';
+        }
+      } else if (cohost) {
+        // A CoHost has no tenant of their own; with nothing selected they land on the
+        // default store, and the dashboard's switcher says so in as many words.
+        clientId = null;
+      }
+    }
+
     context.data = Object.assign({}, context.data, {
       auth: 'session',
       session,
       clientId,
+      isAdmin,
+      cohostId: cohost ? cohost.id : null,
+      // True when this tenant came from the view switcher rather than from the
+      // caller's own membership. Routes that hand out a tenant's own credentials
+      // (see functions/api/my-token.js) refuse in that case.
+      viewingAs,
     });
     return next();
   }

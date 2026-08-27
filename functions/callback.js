@@ -14,7 +14,8 @@ import {
   sign, parseCookies, buildCookie, clearCookie, safeEqual,
   COOKIE_NAME, STATE_COOKIE, SESSION_MAX_AGE,
 } from './_session.js';
-import { resolveAccess, touchUser, enrollUser } from './_admin.js';
+import { resolveAccess, touchUser, touchCohost, enrollUser, claimCohostInvite } from './_admin.js';
+import { INVITE_COOKIE } from './invite.js';
 
 function bounce(url, params, extraHeaders) {
   const dest = new URL('/', url);
@@ -22,6 +23,7 @@ function bounce(url, params, extraHeaders) {
   const headers = new Headers({ Location: dest.toString(), 'Cache-Control': 'no-store' });
   headers.append('Set-Cookie', clearCookie(STATE_COOKIE));
   headers.append('Set-Cookie', clearCookie('pulse_next'));
+  headers.append('Set-Cookie', clearCookie(INVITE_COOKIE));
   (extraHeaders || []).forEach(h => headers.append('Set-Cookie', h));
   return new Response(null, { status: 302, headers });
 }
@@ -86,6 +88,23 @@ export async function onRequestGet({ request, env }) {
   // enrollUser provisions the tenant (trial, own KV store, own collector token) and
   // the sign-in continues straight into the dashboard. A rejection here now only
   // means the account is suspended or its trial lapsed.
+  // --- 4a. CoHost invite claim ---
+  // Arriving with a live invite cookie means this sign-in came through /invite. Bind
+  // this LinkedIn identity to the invited record BEFORE resolving access, so the very
+  // first sign-in already lands as a CoHost rather than self-enrolling as a client.
+  // Runs at most once per invite: claimCohostInvite stamps usedAt.
+  if (cookies[INVITE_COOKIE]) {
+    const claim = await claimCohostInvite(env, cookies[INVITE_COOKIE], {
+      email,
+      name: who.name || [who.given_name, who.family_name].filter(Boolean).join(' '),
+    });
+    if (!claim.ok && claim.reason !== 'invalid-invite') {
+      // A real conflict (this email already IS someone) — say so rather than silently
+      // falling through and quietly creating a second identity for the same person.
+      return bounce(url, { denied: '1', e: email || 'unknown', reason: claim.reason });
+    }
+  }
+
   let access = await resolveAccess(email, env);
   if (!access.allowed && access.reason === 'not-invited') {
     const created = await enrollUser(env, {
@@ -99,7 +118,8 @@ export async function onRequestGet({ request, env }) {
     return bounce(url, { denied: '1', e: email || 'unknown', reason: access.reason });
   }
   // Best-effort last-seen stamp for the admin console.
-  await touchUser(env, email);
+  if (access.cohost) await touchCohost(env, email);
+  else await touchUser(env, email);
 
   // --- 5. Session ---
   const now = Date.now();
@@ -108,6 +128,9 @@ export async function onRequestGet({ request, env }) {
     email,
     clientId: access.client ? access.client.id : null,
     admin: !!access.admin,
+    // A CoHost has no home tenant; the tenant they are looking at lives in the
+    // pulse_view cookie and is re-validated against the registry on every request.
+    cohost: access.cohost ? access.cohost.id : null,
     name: who.name || [who.given_name, who.family_name].filter(Boolean).join(' ') || email,
     picture: who.picture || null,
     iat: now,
@@ -125,6 +148,7 @@ export async function onRequestGet({ request, env }) {
   const headers = new Headers({ Location: new URL(next, url).toString(), 'Cache-Control': 'no-store' });
   headers.append('Set-Cookie', clearCookie(STATE_COOKIE));
   headers.append('Set-Cookie', clearCookie('pulse_next'));
+  headers.append('Set-Cookie', clearCookie(INVITE_COOKIE));
   headers.append('Set-Cookie', buildCookie(COOKIE_NAME, token, SESSION_MAX_AGE));
   return new Response(null, { status: 302, headers });
 }
