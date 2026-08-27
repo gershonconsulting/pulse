@@ -503,6 +503,13 @@
   <a href="mailto:support@gershonconsulting.com?subject=Pulse%20subscription" style="color:inherit;text-decoration:underline;margin-left:10px;font-weight:800;">Keep Pulse &#8594;</a>
 </div>
 
+<!-- CoHost / admin cross-account strip. Shown ONLY while looking at an account that
+     is not your own, so nobody ever acts on someone else's inbox by accident. -->
+<div id="cohost-banner" style="display:none;padding:10px 20px;text-align:center;font-size:13.5px;font-weight:600;position:fixed;top:0;left:0;right:0;width:100%;box-sizing:border-box;z-index:2999;background:#4338ca;color:#fff;">
+  <span id="cohost-banner-msg"></span>
+  <button type="button" onclick="pulseSwitchTenant('__default')" style="margin-left:12px;font:inherit;font-weight:800;color:#fff;background:rgba(255,255,255,.18);border:0;border-radius:6px;padding:3px 10px;cursor:pointer;">Back to my account</button>
+</div>
+
 <!-- Live sync progress bar (shown while the Chrome extension is running Sync Now) -->
 <div id="sync-bar" role="status" aria-live="polite">
   <div id="sync-bar-fill"></div>
@@ -561,6 +568,12 @@
     </a>
   </nav>
   <div class="sidebar-footer">
+    <!-- Account switcher. Rendered only for CoHosts and super-admins — /api/me decides,
+         and the server re-checks on every request, so hiding it is cosmetic. -->
+    <div id="tenant-switch" style="display:none;margin-bottom:12px">
+      <label for="tenant-select" style="display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Viewing account</label>
+      <select id="tenant-select" onchange="pulseSwitchTenant(this.value)" style="width:100%;padding:7px 8px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);cursor:pointer"></select>
+    </div>
     <div class="user-chip" id="user-chip" style="display:none">
       <span class="avatar" id="user-avatar">?</span>
       <span class="who">
@@ -571,7 +584,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.4.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.0</div>
   </div>
 </aside>
 
@@ -922,7 +935,7 @@
       </div>
 
       <!-- ── Access token (self-service; see functions/api/my-token.js) ── -->
-      <div class="settings-section">
+      <div class="settings-section" id="my-token-card">
         <div class="settings-section-header">
           <h3>Your access token</h3>
           <button class="run-diag-btn" id="tok-btn-rotate" onclick="tokRotate()">Rotate</button>
@@ -1084,7 +1097,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.4.0" readonly>
+            <input type="text" value="v5.6.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1163,7 +1176,7 @@ const API_BASE = window.location.origin;
   // whichever are visible have to be stacked and the body pushed down by their total
   // height. One function owns that so the two can never overlap the page header.
   window.pulseStackBanners = function () {
-    var strips = ['ext-version-banner', 'trial-banner'];
+    var strips = ['cohost-banner', 'ext-version-banner', 'trial-banner'];
     var offset = 0;
     strips.forEach(function (id) {
       var el = document.getElementById(id);
@@ -1200,9 +1213,93 @@ const API_BASE = window.location.origin;
   // Olivier's local unpacked-extension folder is only useful to him — hide that block
   // from self-enrolled clients, who install from the downloaded zip.
   function paintAdminOnlyBits(me) {
+    // A CoHost is looking at someone else's account, so the "your access token" card
+    // is not theirs to see — /api/my-token refuses them server-side regardless.
+    if (me && me.isCohost) {
+      var card = document.getElementById('my-token-card');
+      if (card) card.style.display = 'none';
+    }
     if (me && me.isAdmin) return;
     var el = document.getElementById('ext-local-folder');
     if (el) el.style.display = 'none';
+  }
+
+  /* ── ACCOUNT SWITCHER (CoHosts + super-admins) ───────────────────────────────
+     A CoHost has no tenant of their own: they pick whose inbox they are looking at,
+     and every API call is served that tenant's data. The selection lives in an
+     HttpOnly cookie set by POST /api/cohost — never in page script — so what the
+     screen shows and what the server serves can never drift apart. Switching
+     reloads the page for exactly that reason: a half-swapped dashboard showing one
+     account's numbers over another's records is worse than a one-second reload. */
+  window.pulseSwitchTenant = function (clientId) {
+    var sel = document.getElementById('tenant-select');
+    if (sel) sel.disabled = true;
+    _fetch('/api/cohost', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: clientId || '__default' }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'switch-failed');
+        location.reload();
+      })
+      .catch(function () {
+        if (sel) sel.disabled = false;
+        alert('Could not switch account. Please try again.');
+      });
+  };
+
+  function paintTenantSwitch(me) {
+    if (!me || !me.canSwitchTenants) return;
+    var wrap = document.getElementById('tenant-switch');
+    var sel = document.getElementById('tenant-select');
+    if (!wrap || !sel) return;
+
+    _fetch('/api/cohost', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.ok || !d.tenants || !d.tenants.length) return;
+        var currentId = (me.viewing && me.viewing.clientId) || null;
+        sel.innerHTML = d.tenants.map(function (t) {
+          var value = t.isDefault ? '__default' : t.clientId;
+          var selected = (t.clientId || null) === currentId ? ' selected' : '';
+          var count = (t.conversations === null || t.conversations === undefined) ? '' : ' (' + t.conversations + ')';
+          var flag = t.status === 'suspended' ? ' — suspended' : '';
+          return '<option value="' + value + '"' + selected + '>' + escapeHtmlLite(t.name) + count + flag + '</option>';
+        }).join('');
+        wrap.style.display = '';
+      })
+      .catch(function () { /* the switcher is an enhancement — never block the app */ });
+  }
+
+  function escapeHtmlLite(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // The strip only appears when the account on screen is NOT your own — a CoHost
+  // looking at Gershon's default store sees it too, because none of these accounts
+  // are theirs.
+  function paintCohostBanner(me) {
+    if (!me || !me.canSwitchTenants) return;
+    var viewingOther = me.isCohost || !(me.viewing && me.viewing.isDefault);
+    if (!viewingOther) return;
+    var bar = document.getElementById('cohost-banner');
+    var msg = document.getElementById('cohost-banner-msg');
+    if (!bar || !msg) return;
+    var who = (me.viewing && me.viewing.name) || 'another account';
+    msg.textContent = (me.isCohost ? '\uD83D\uDC41 CoHost view \u2014 you are working in ' : '\uD83D\uDC41 Viewing ')
+      + who + '\u2019s account.';
+    // A CoHost has no account of their own to go back to; hide the escape button.
+    if (me.isCohost) {
+      var btn = bar.querySelector('button');
+      if (btn) btn.style.display = 'none';
+    }
+    bar.style.display = 'block';
+    window.pulseStackBanners();
   }
 
   window.__PULSE_ME = null;
@@ -1214,12 +1311,17 @@ const API_BASE = window.location.origin;
       window.__PULSE_ME = me;
       reveal();
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { paintUser(me.user); paintAdmin(me); paintTrial(me); paintAdminOnlyBits(me); });
+        document.addEventListener('DOMContentLoaded', function () {
+          paintUser(me.user); paintAdmin(me); paintTrial(me); paintAdminOnlyBits(me);
+          paintTenantSwitch(me); paintCohostBanner(me);
+        });
       } else {
         paintUser(me.user);
         paintAdmin(me);
         paintTrial(me);
         paintAdminOnlyBits(me);
+        paintTenantSwitch(me);
+        paintCohostBanner(me);
       }
     })
     .catch(function () {

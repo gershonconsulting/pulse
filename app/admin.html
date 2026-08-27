@@ -182,6 +182,7 @@
   <nav class="sidebar-nav">
     <button class="nav-item active" data-page="overview"><span class="nav-icon">&#128202;</span><span>Overview</span></button>
     <button class="nav-item" data-page="clients"><span class="nav-icon">&#127970;</span><span>Clients</span><span class="nav-badge" id="nav-badge-clients">0</span></button>
+    <button class="nav-item" data-page="cohosts"><span class="nav-icon">&#128064;</span><span>CoHosts</span><span class="nav-badge" id="nav-badge-cohosts">0</span></button>
     <button class="nav-item" data-page="audit"><span class="nav-icon">&#128220;</span><span>Audit log</span></button>
     <div class="nav-sep"></div>
     <a class="nav-item" href="/app.html"><span class="nav-icon">&#8592;</span><span>Back to Pulse</span></a>
@@ -192,7 +193,7 @@
       <span class="who"><span class="who-name" id="user-name"></span><span class="who-mail" id="user-email"></span></span>
       <a class="signout" href="/api/logout" title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></a>
     </div>
-    <div class="version">Admin v1.0.0</div>
+    <div class="version">Admin v1.1.0</div>
   </div>
 </aside>
 
@@ -212,6 +213,7 @@
         <div class="stat-card trial"><div class="stat-number" id="ov-trial">&mdash;</div><div class="stat-label">Trial</div><div class="stat-desc">Evaluating</div></div>
         <div class="stat-card suspended"><div class="stat-number" id="ov-suspended">&mdash;</div><div class="stat-label">Suspended</div><div class="stat-desc">Access blocked</div></div>
         <div class="stat-card"><div class="stat-number" id="ov-users">&mdash;</div><div class="stat-label">Seats</div><div class="stat-desc">Users who can sign in</div></div>
+        <div class="stat-card"><div class="stat-number" id="ov-cohosts">&mdash;</div><div class="stat-label">CoHosts</div><div class="stat-desc">Operators across all accounts</div></div>
       </div>
 
       <div class="card">
@@ -246,6 +248,30 @@
           <input id="client-search" class="btn" style="width:220px;font-weight:400;cursor:text" placeholder="Search clients…" oninput="renderClients()">
         </div>
         <div id="clients-table"><div class="empty">Loading&hellip;</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ COHOSTS ════════ -->
+  <div class="page-view" id="page-cohosts">
+    <div class="page-header">
+      <div><h2>CoHosts</h2><div class="header-sub">Internal operators who can open any client account and work the queue &mdash; but never this console.</div></div>
+      <div><button class="btn btn-ghost-light" onclick="openNewCohost()">+ Add CoHost</button></div>
+    </div>
+    <div class="container">
+      <div class="notice info">
+        <span class="ico">&#128161;</span>
+        <span>A CoHost is identified by their <b>LinkedIn profile URL</b>, but LinkedIn only tells us the
+        <b>email</b> someone signs in with &mdash; the two can't be matched on their own. So adding a CoHost
+        mints a one-time <b>invite link</b>. The first LinkedIn sign-in through that link binds their real
+        account to the record, for good. Nothing to copy, paste or configure at their end.</span>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div><h3>CoHost access</h3><div class="sub" id="cohosts-sub">&mdash;</div></div>
+          <input id="cohost-search" class="btn" style="width:220px;font-weight:400;cursor:text" placeholder="Search CoHosts…" oninput="renderCohosts()">
+        </div>
+        <div id="cohosts-table"><div class="empty">Loading&hellip;</div></div>
       </div>
     </div>
   </div>
@@ -305,6 +331,35 @@
   <div class="modal-foot"><button class="btn" onclick="copyToken()">Copy</button><button class="btn btn-primary" onclick="closeAll()">Done</button></div>
 </div>
 
+<div class="modal" id="modal-cohost">
+  <div class="modal-head"><h3>Add CoHost</h3><button class="x" onclick="closeAll()">&times;</button></div>
+  <div class="modal-body">
+    <div class="field">
+      <label for="ch-name">Name *</label>
+      <input id="ch-name" placeholder="Aina Ramangason" maxlength="80">
+      <div class="help">How they appear in the audit log and in the account switcher.</div>
+    </div>
+    <div class="field">
+      <label for="ch-url">LinkedIn profile URL *</label>
+      <input id="ch-url" placeholder="https://www.linkedin.com/in/aina-ramangason/">
+      <div class="help">Used to identify the person. Paste the full profile URL &mdash; any form works.</div>
+    </div>
+    <div class="field"><label for="ch-notes">Notes</label><textarea id="ch-notes" placeholder="Internal notes — never shown to the CoHost."></textarea></div>
+    <div class="notice info"><span class="ico">&#128274;</span><span>CoHosts can read and update conversations in every account, but <b>cannot</b> open this admin console, see collector tokens or change the registry.</span></div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeAll()">Cancel</button><button class="btn btn-primary" id="ch-save" onclick="createCohost()">Create invite link</button></div>
+</div>
+
+<div class="modal" id="modal-invite">
+  <div class="modal-head"><h3>Invite link</h3><button class="x" onclick="closeAll()">&times;</button></div>
+  <div class="modal-body">
+    <div class="notice warn"><span class="ico">&#9888;</span><span><b>Send this now.</b> It is shown once and never again. It works for a single sign-in and expires in 14 days &mdash; if it is lost, re-issue a new one.</span></div>
+    <div class="token-box" id="invite-value">&mdash;</div>
+    <div class="help" style="font-size:12px;color:var(--muted);line-height:1.5">Send it to <span id="invite-who">them</span>. Opening it takes them straight to &ldquo;Sign in with LinkedIn&rdquo;; whichever account they use is bound to this CoHost from then on.</div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="copyInvite()">Copy link</button><button class="btn btn-primary" onclick="closeAll()">Done</button></div>
+</div>
+
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
     <div><h3 id="dr-title">&mdash;</h3><div class="cell-id" id="dr-id">&mdash;</div></div>
@@ -353,7 +408,7 @@
    page's own gate is convenience, not security.
    ═════════════════════════════════════════════════════════════════════════ */
 
-var STATE = { me: null, clients: [], overview: null, audit: [], current: null, lastToken: '' };
+var STATE = { me: null, clients: [], cohosts: [], overview: null, audit: [], current: null, lastToken: '', lastInvite: '' };
 
 /* --- tiny helpers -------------------------------------------------------- */
 function $(id) { return document.getElementById(id); }
@@ -426,6 +481,8 @@ function closeAll() {
   $('overlay').classList.remove('open');
   $('modal-new').classList.remove('open');
   $('modal-token').classList.remove('open');
+  $('modal-cohost').classList.remove('open');
+  $('modal-invite').classList.remove('open');
   $('drawer').classList.remove('open');
   STATE.current = null;
 }
@@ -440,6 +497,7 @@ async function loadOverview() {
   $('ov-trial').textContent = d.clients.byStatus.trial || 0;
   $('ov-suspended').textContent = d.clients.byStatus.suspended || 0;
   $('ov-users').textContent = d.clients.users;
+  $('ov-cohosts').textContent = (d.cohosts && d.cohosts.total) || 0;
   $('ov-convos').textContent = d.platform.conversations;
   $('ov-red').textContent = d.platform.red;
   $('ov-scans').textContent = d.platform.scans;
@@ -557,6 +615,11 @@ function explain(e) {
     case 'email-taken': return 'That email already belongs to ' + (b.clientName || 'another client') + '.';
     case 'already-member': return 'That email is already on this client.';
     case 'bad-email': return 'That does not look like a valid email address.';
+    case 'bad-linkedin-url': return 'That does not look like a LinkedIn profile URL — it should contain linkedin.com/in/…';
+    case 'already-invited': return (b.cohostName || 'Someone') + ' is already a CoHost with that LinkedIn profile.';
+    case 'already-claimed': return 'That CoHost has already linked their LinkedIn account — no new invite is needed.';
+    case 'email-is-client': return 'That email already signs in as ' + (b.clientName || 'a client') + '.';
+    case 'revoked': return 'That CoHost is revoked — restore them first.';
     case 'name-required': return 'Client name is required.';
     case 'not-found': return 'That client no longer exists — refreshing.';
     case 'user-not-found': return 'That user was already removed.';
@@ -693,17 +756,153 @@ function showToken(tok) {
   $('overlay').classList.add('open');
   $('modal-token').classList.add('open');
 }
-function copyToken() {
-  var t = STATE.lastToken;
+function copyText(t, okMsg) {
   if (!t) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(t).then(function () { toast('Token copied'); }, function () { toast('Copy failed — select it manually', true); });
+    navigator.clipboard.writeText(t).then(function () { toast(okMsg); }, function () { toast('Copy failed — select it manually', true); });
   } else {
     var ta = document.createElement('textarea');
     ta.value = t; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); toast('Token copied'); } catch (e) { toast('Copy failed', true); }
+    try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('Copy failed', true); }
     document.body.removeChild(ta);
   }
+}
+function copyToken() { copyText(STATE.lastToken, 'Token copied'); }
+
+/* ══ COHOSTS ═══════════════════════════════════════════════════════════════
+   Internal operators with cross-account access. The server never returns a live
+   invite token on a list — only whether a link is outstanding — so the URL below
+   exists exactly once, in the response to the call that minted it. */
+async function loadCohosts() {
+  var d = await api('/api/admin/cohosts');
+  STATE.cohosts = d.cohosts || [];
+  $('nav-badge-cohosts').textContent = STATE.cohosts.length;
+  renderCohosts();
+}
+
+function cohostPill(h) {
+  if (h.status === 'active') return '<span class="pill active">active</span>';
+  if (h.status === 'revoked') return '<span class="pill suspended">revoked</span>';
+  return h.invitePending
+    ? '<span class="pill trial">invite sent</span>'
+    : '<span class="pill plain">invite expired</span>';
+}
+
+function renderCohosts() {
+  var q = ($('cohost-search').value || '').trim().toLowerCase();
+  var list = STATE.cohosts.filter(function (h) {
+    if (!q) return true;
+    return (h.name + ' ' + h.id + ' ' + (h.email || '') + ' ' + (h.linkedinSlug || '')).toLowerCase().indexOf(q) !== -1;
+  });
+
+  var actives = STATE.cohosts.filter(function (h) { return h.status === 'active'; }).length;
+  var pending = STATE.cohosts.filter(function (h) { return h.status === 'invited' && h.invitePending; }).length;
+  $('cohosts-sub').textContent = STATE.cohosts.length === 0
+    ? 'Nobody yet'
+    : actives + ' active · ' + pending + ' invite' + (pending === 1 ? '' : 's') + ' outstanding';
+
+  if (!STATE.cohosts.length) {
+    $('cohosts-table').innerHTML =
+      '<div class="empty"><span class="big">&#128064;</span>No CoHosts yet.<br>' +
+      'Add one with their LinkedIn profile URL and send them the invite link.<br><br>' +
+      '<button class="btn btn-primary" onclick="openNewCohost()">+ Add CoHost</button></div>';
+    return;
+  }
+  if (!list.length) { $('cohosts-table').innerHTML = '<div class="empty">No CoHost matches that search.</div>'; return; }
+
+  var rows = list.map(function (h) {
+    var acts = [];
+    if (h.status !== 'revoked' && !h.email) acts.push('<button class="btn btn-sm" onclick="reissueInvite(\'' + esc(h.id) + '\')">' + (h.invitePending ? 'New link' : 'Re-invite') + '</button>');
+    if (h.status === 'revoked') acts.push('<button class="btn btn-sm" onclick="restoreCohost(\'' + esc(h.id) + '\')">Restore</button>');
+    else acts.push('<button class="btn btn-sm btn-danger" onclick="revokeCohost(\'' + esc(h.id) + '\')">Revoke</button>');
+    acts.push('<button class="btn btn-sm" onclick="deleteCohost(\'' + esc(h.id) + '\')" title="Remove the record entirely">&times;</button>');
+
+    return '<tr>' +
+      '<td><div class="cell-name">' + esc(h.name) + '</div><div class="cell-id">' + esc(h.id) + '</div></td>' +
+      '<td class="hide-sm"><a href="' + esc(h.linkedinUrl) + '" target="_blank" rel="noopener" style="color:#0077b5">' + esc(h.linkedinSlug || '—') + '</a></td>' +
+      '<td class="hide-sm mono">' + (h.email ? esc(h.email) : '<span style="color:var(--muted)">not linked yet</span>') + '</td>' +
+      '<td class="nowrap">' + cohostPill(h) + '</td>' +
+      '<td class="hide-sm nowrap" style="color:var(--muted)">' + esc(fmtWhen(h.lastSeenAt)) + '</td>' +
+      '<td class="right nowrap" style="display:flex;gap:6px;justify-content:flex-end">' + acts.join('') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  $('cohosts-table').innerHTML =
+    '<table class="grid"><thead><tr>' +
+    '<th>CoHost</th><th class="hide-sm">LinkedIn</th><th class="hide-sm">Signs in as</th>' +
+    '<th>Status</th><th class="hide-sm">Last seen</th><th></th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function openNewCohost() {
+  ['ch-name', 'ch-url', 'ch-notes'].forEach(function (id) { $(id).value = ''; });
+  $('overlay').classList.add('open');
+  $('modal-cohost').classList.add('open');
+  setTimeout(function () { $('ch-name').focus(); }, 60);
+}
+
+function showInvite(url, who) {
+  STATE.lastInvite = url || '';
+  $('invite-value').textContent = url || '—';
+  $('invite-who').textContent = who || 'them';
+  $('overlay').classList.add('open');
+  $('modal-invite').classList.add('open');
+}
+
+function copyInvite() { copyText(STATE.lastInvite, 'Invite link copied'); }
+
+async function createCohost() {
+  var name = $('ch-name').value.trim();
+  var url = $('ch-url').value.trim();
+  if (!name) { toast('Name is required', true); $('ch-name').focus(); return; }
+  if (!url) { toast('LinkedIn profile URL is required', true); $('ch-url').focus(); return; }
+  $('ch-save').disabled = true;
+  try {
+    var d = await jsonPost('POST', '/api/admin/cohosts', { name: name, linkedinUrl: url, notes: $('ch-notes').value });
+    closeAll();
+    await loadCohosts();
+    await loadAudit();
+    showInvite(d.inviteUrl, d.cohost.name);
+    toast('CoHost "' + d.cohost.name + '" invited');
+  } catch (e) { toast(explain(e), true); }
+  finally { $('ch-save').disabled = false; }
+}
+
+async function reissueInvite(id) {
+  try {
+    var d = await jsonPost('PATCH', '/api/admin/cohosts', { id: id, action: 'reissue' });
+    await loadCohosts();
+    showInvite(d.inviteUrl, d.cohost.name);
+  } catch (e) { toast(explain(e), true); }
+}
+
+async function revokeCohost(id) {
+  var h = STATE.cohosts.find(function (x) { return x.id === id; }) || { name: id };
+  if (!confirm('Revoke ' + h.name + '?\n\nThey lose access to every account on their next click, and any unused invite link stops working.')) return;
+  try {
+    await jsonPost('PATCH', '/api/admin/cohosts', { id: id, action: 'revoke' });
+    await loadCohosts(); await loadAudit();
+    toast(h.name + ' revoked');
+  } catch (e) { toast(explain(e), true); }
+}
+
+async function restoreCohost(id) {
+  try {
+    var d = await jsonPost('PATCH', '/api/admin/cohosts', { id: id, action: 'restore' });
+    await loadCohosts(); await loadAudit();
+    if (d.inviteUrl) showInvite(d.inviteUrl, d.cohost.name);
+    else toast(d.cohost.name + ' restored');
+  } catch (e) { toast(explain(e), true); }
+}
+
+async function deleteCohost(id) {
+  var h = STATE.cohosts.find(function (x) { return x.id === id; }) || { name: id };
+  if (!confirm('Delete the CoHost record for ' + h.name + '?\n\nThis cannot be undone — you would have to invite them again from scratch.')) return;
+  try {
+    await api('/api/admin/cohosts?id=' + encodeURIComponent(id), { method: 'DELETE' });
+    await loadCohosts(); await loadAudit();
+    toast(h.name + ' deleted');
+  } catch (e) { toast(explain(e), true); }
 }
 
 /* ══ AUDIT ═════════════════════════════════════════════════════════════════ */
@@ -715,6 +914,14 @@ var ACTION_LABEL = {
   'user.remove': ['Removed user', '#dc2626'],
   'token.issue': ['Issued token', '#0077b5'],
   'token.rotate': ['Rotated token', '#d97706'],
+  'client.self-enroll': ['Self-enrolled', '#16a34a'],
+  'cohost.invite': ['Invited CoHost', '#7c3aed'],
+  'cohost.claim': ['CoHost linked account', '#16a34a'],
+  'cohost.reissue': ['Re-issued invite', '#d97706'],
+  'cohost.revoke': ['Revoked CoHost', '#dc2626'],
+  'cohost.restore': ['Restored CoHost', '#16a34a'],
+  'cohost.update': ['Updated CoHost', '#0077b5'],
+  'cohost.delete': ['Deleted CoHost', '#dc2626'],
 };
 
 function auditDetail(e) {
@@ -761,7 +968,7 @@ async function loadAudit() {
 
 /* ══ BOOT ══════════════════════════════════════════════════════════════════ */
 async function refreshAll() {
-  await Promise.all([loadOverview(), loadClients(), loadAudit()]);
+  await Promise.all([loadOverview(), loadClients(), loadCohosts(), loadAudit()]);
 }
 
 (async function boot() {
@@ -783,7 +990,7 @@ async function refreshAll() {
   document.documentElement.classList.remove('pulse-gate-pending');
 
   var hash = (location.hash || '').replace('#', '');
-  if (['overview', 'clients', 'audit'].indexOf(hash) !== -1) go(hash);
+  if (['overview', 'clients', 'cohosts', 'audit'].indexOf(hash) !== -1) go(hash);
 
   try { await refreshAll(); } catch (e) { toast('Could not load the registry', true); }
 })();

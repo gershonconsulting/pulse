@@ -329,7 +329,9 @@
     token:    'LinkedIn did not complete the sign-in. Please try again in a moment.',
     userinfo: 'LinkedIn did not return your profile. Please try again.',
     config:   'Sign-in is not fully configured yet. The administrator has been notified.',
-    access_denied: 'You cancelled the LinkedIn sign-in.'
+    access_denied: 'You cancelled the LinkedIn sign-in.',
+    invite: 'That invite link is not valid. Ask whoever sent it for a fresh one.',
+    'invite-expired': 'That invite link has already been used or has expired. Ask whoever sent it to issue a new one.'
   };
 
   if (params.get('denied') === '1') {
@@ -342,6 +344,17 @@
         ' collected for 14 days. To keep going, email ' +
         '<a href="mailto:support@gershonconsulting.com?subject=Pulse%20subscription" style="color:inherit;font-weight:700">support@gershonconsulting.com</a>' +
         ' \u2014 your conversations are still here, nothing was deleted.'
+      );
+    } else if (reason === 'cohost-revoked') {
+      showDeny(
+        '<strong>Your CoHost access was removed.</strong> The account' + who +
+        ' no longer has access to Pulse. If that is unexpected, contact support@gershonconsulting.com.'
+      );
+    } else if (reason === 'email-taken' || reason === 'email-is-client') {
+      showDeny(
+        '<strong>That LinkedIn account is already in use.</strong>' + who +
+        ' already signs in to Pulse another way, so the invite could not be applied to it. ' +
+        'Contact support@gershonconsulting.com and we will sort it out.'
       );
     } else if (reason === 'suspended') {
       showDeny(
