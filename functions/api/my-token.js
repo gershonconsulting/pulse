@@ -24,9 +24,25 @@ function forbidden() {
   return json({ ok: false, error: 'forbidden', message: 'Sign in on the website to see your access token.' }, 403);
 }
 
+// A CoHost (or an admin) looking at somebody else's tenant must not be handed that
+// tenant's collector token — reading it would be a credential leak and rotating it
+// would silently break the owner's extension. Tokens belong to the tenant, not to
+// whoever is currently viewing it.
+function viewingSomeoneElse(context) {
+  return !!((context.data || {}).viewingAs);
+}
+
+function notYours() {
+  return json({
+    ok: false, error: 'not-your-tenant',
+    message: 'Access tokens belong to the account that owns them. Switch back to your own view to see yours.',
+  }, 403);
+}
+
 export async function onRequestGet(context) {
   const me = humanOf(context);
   if (!me) return forbidden();
+  if (viewingSomeoneElse(context)) return notYours();
 
   // Gershon's own tenant has no registry client — it uses the shared EXTENSION_TOKEN
   // from the environment, which is deliberately not readable over the API.
@@ -48,6 +64,7 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   const me = humanOf(context);
   if (!me) return forbidden();
+  if (viewingSomeoneElse(context)) return notYours();
   if (!me.clientId) return json({ ok: false, error: 'not-rotatable', message: 'This account uses the shared environment token.' }, 400);
 
   const token = await rotateClientToken(context.env, me.clientId, me.session.email);

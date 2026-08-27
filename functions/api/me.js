@@ -3,8 +3,8 @@
 // 200 + user object when the LinkedIn session cookie is valid; 401 otherwise.
 // Both the marketing homepage and the dashboard call this on load.
 
-import { getSession, clearCookie, COOKIE_NAME } from '../_session.js';
-import { resolveAccess, trialDaysLeft } from '../_admin.js';
+import { getSession, clearCookie, parseCookies, COOKIE_NAME } from '../_session.js';
+import { readAdminStore, findClient, resolveAccess, trialDaysLeft, VIEW_COOKIE, VIEW_DEFAULT } from '../_admin.js';
 
 const NO_STORE = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
@@ -26,11 +26,36 @@ export async function onRequestGet({ request, env }) {
     });
   }
 
+  // Which tenant is this session actually being served? For everyone except a CoHost
+  // or an admin that is simply their own client. For those two it is whatever the
+  // view switcher selected, so the dashboard can label the screen honestly.
+  //
+  // NOTE: /api/me is a PUBLIC path in the root middleware (it has to answer 401 for
+  // signed-out visitors), which means it never receives the stamped context.data —
+  // so the selection is read and re-validated HERE, against the same registry the
+  // middleware uses. Same rule, same answer, no drift.
+  const canSwitchTenants = !!access.admin || !!access.cohost;
+  let viewing = null;
+  if (canSwitchTenants) {
+    const wanted = String(parseCookies(request.headers.get('Cookie'))[VIEW_COOKIE] || '').trim();
+    const selected = (wanted && wanted !== VIEW_DEFAULT) ? wanted : null;
+    const client = selected ? findClient(await readAdminStore(env), selected) : null;
+    viewing = client
+      ? { clientId: client.id, name: client.name, status: client.status, isDefault: false }
+      : { clientId: null, name: 'Gershon Consulting', status: 'active', isDefault: true };
+  }
+
   return new Response(JSON.stringify({
     ok: true,
     // isAdmin is authoritative here (env-var driven), NOT read from the cookie — so
     // revoking admin takes effect immediately instead of after the 30-day expiry.
     isAdmin: !!access.admin,
+    // Same reasoning for CoHost: the LIVE registry decides, not the 30-day cookie,
+    // so revoking a CoHost logs them out on their very next call.
+    isCohost: !!access.cohost,
+    cohost: access.cohost ? { id: access.cohost.id, name: access.cohost.name } : null,
+    canSwitchTenants,
+    viewing,
     client: access.client
       ? {
           id: access.client.id,
