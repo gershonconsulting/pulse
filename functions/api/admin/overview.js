@@ -38,6 +38,12 @@ export async function onRequestGet({ env, data }) {
   const byStatus = { trial: 0, active: 0, suspended: 0 };
   clients.forEach(c => { byStatus[c.status] = (byStatus[c.status] || 0) + 1; });
 
+  // CoHosts: internal operators who can view any tenant. Counted separately from
+  // seats — they are not a client's users and never occupy a client's licence.
+  const cohosts = store.cohosts || [];
+  const cohostStatus = { invited: 0, active: 0, revoked: 0 };
+  cohosts.forEach(h => { cohostStatus[h.status] = (cohostStatus[h.status] || 0) + 1; });
+
   const lastScan = (dataStore.scans && dataStore.scans[0]) || null;
   const messages = dataStore.messages || [];
 
@@ -53,6 +59,11 @@ export async function onRequestGet({ env, data }) {
       users: clients.reduce((n, c) => n + c.users.length, 0),
       withToken: clients.filter(c => !!c.extensionToken).length,
       byStatus,
+    },
+    cohosts: {
+      total: cohosts.length,
+      byStatus: cohostStatus,
+      pendingInvites: cohostStatus.invited || 0,
     },
     perClient,
     platform: {
