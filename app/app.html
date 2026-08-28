@@ -584,7 +584,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.1</div>
   </div>
 </aside>
 
@@ -1097,7 +1097,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.6.0" readonly>
+            <input type="text" value="v5.6.1" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -2686,7 +2686,10 @@ async function patchMessage(name, body) {
 }
 async function setStatus(name, status) { return patchMessage(name, { status: status }); }
 async function setFocus(name, focus) { return patchMessage(name, { focus: focus }); }
-async function setDone(name, done) { return patchMessage(name, { done: done }); }
+async function setDone(name, done) {
+  // Checking a conversation also clears its star (handled = no longer a focus).
+  return patchMessage(name, done ? { done: true, focus: false } : { done: false });
+}
 
 // ─── FILTER & SEARCH ───
 document.getElementById("filter-tabs").addEventListener("click", function(e) {
