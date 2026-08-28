@@ -584,7 +584,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.1</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.2</div>
   </div>
 </aside>
 
@@ -1038,8 +1038,9 @@
             collector into tabs opened after the extension loaded.<br>
             <b>&ldquo;Can't start a sync from here&rdquo;</b> &mdash; you're on an extension older than v1.17.0.
             Download above, reload the extension, reload this page.<br>
-            <b>&ldquo;No access token&rdquo;</b> &mdash; copy the token from <b>Your access token</b> above and
-            paste it into the extension's popup. Without it the collector can't write to your Pulse account.<br>
+            <b>&ldquo;No access token&rdquo;</b> &mdash; reload this page while signed in; the collector is handed
+            its token automatically. If it still says missing, check <b>Your access token</b> above &mdash; if that
+            reads <i>Not set</i>, <code>EXTENSION_TOKEN</code> is missing in Cloudflare.<br>
             <b>Sync starts then stalls</b> &mdash; make sure you're signed in to LinkedIn in this browser, and
             don't close the LinkedIn tabs the collector opens.
           </div>
@@ -1097,7 +1098,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.6.1" readonly>
+            <input type="text" value="v5.6.2" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1357,6 +1358,8 @@ window.extState = {
   testing: false,
   syncing: false,
   tested: false,
+  sawRunning: false,      // has the collector ever reported a live run this attempt?
+  syncWatchdog: null,     // timer that turns a silent refusal into a real message
   autoConnect: null,      // null | 'done' | 'too-old' | 'env' | 'no-token' | 'failed'
   autoConnectError: null,
   autoConnecting: false,
@@ -1538,8 +1541,10 @@ async function extAutoConnect() {
     const d = await r.json();
 
     if (!d || !d.ok || !d.token) {
-      // 'env' = this account uses the shared EXTENSION_TOKEN from Cloudflare,
-      // which is deliberately never readable over the API.
+      // 'env' now means the shared EXTENSION_TOKEN is genuinely UNSET in Cloudflare.
+      // Until 2026-08-28 the route withheld it on purpose, which dead-ended the one
+      // account that owns the default tenant: auto-connect gave up here, the collector
+      // never got a token, and "Sync now" did nothing at all.
       extState.autoConnect = (d && d.managed === 'env') ? 'env' : 'no-token';
       return;
     }
@@ -1608,7 +1613,7 @@ function extPaintHero() {
   } else if (extState.hasToken === false) {
     cls = 'warn'; icon = '🔑';
     head = 'Extension v' + esc(extState.version) + ' installed — no access token';
-    text = 'The collector is up to date but cannot write to Pulse yet. Open its popup and paste the token from Cloudflare (EXTENSION_TOKEN).';
+    text = 'The collector is up to date but cannot write to Pulse yet. Reload this page while signed in and it connects itself; if that does not take, the Installation check below says exactly what is missing.';
   } else {
     cls = 'ok'; icon = '✓';
     head = 'Extension v' + esc(extState.version) + ' installed and working';
@@ -1674,7 +1679,7 @@ function extPaintChecks() {
     const why = extState.autoConnect === 'too-old'
       ? 'Update to v' + EXT_AUTOCONNECT_MIN_VERSION + ' below, then reload this page — it will connect itself'
       : extState.autoConnect === 'env'
-        ? 'This account uses the shared Cloudflare token (EXTENSION_TOKEN) — paste it in the extension popup once'
+        ? 'EXTENSION_TOKEN is not set in Cloudflare — set it under Settings → Variables and Secrets, redeploy, then reload this page'
         : extState.autoConnect === 'failed'
           ? 'Could not hand the token over: ' + esc(extState.autoConnectError || '') + ' — reload this page to retry'
           : 'Reload this page while signed in and the extension will be connected automatically';
@@ -1745,12 +1750,33 @@ async function extStartSync() {
   const log = document.getElementById('ext-sync-log');
   if (wrap) wrap.style.display = 'block';
   if (log) log.innerHTML = '<div>Starting…</div>';
-  extSetSyncBadge('Running', 'checking');
+  extSetSyncBadge('Starting…', 'checking');
+  extState.sawRunning = false;
+
+  // The collector can refuse a run BEFORE it publishes any state — the no-token
+  // bail-out does exactly that. The poller then reads "not running" twice and gives
+  // up, which used to leave the badge stuck on Running over an Idle bar with no
+  // explanation at all. This watchdog turns that silence into a real message.
+  if (extState.syncWatchdog) clearTimeout(extState.syncWatchdog);
+  extState.syncWatchdog = setTimeout(function () {
+    if (extState.sawRunning) return;
+    extState.syncing = false;
+    extSetSyncBadge('Did not start', 'error');
+    const why = extState.hasToken === false
+      ? 'The collector has no access token, so it refused the run before it began. Reload this page while signed in to reconnect it — the Installation check above shows what is missing.'
+      : 'The collector accepted the request but never started. Reload the extension in chrome://extensions, reload this page, and try again.';
+    const l = document.getElementById('ext-sync-log');
+    if (l) l.innerHTML = '<div class="error">Sync did not start.</div><div class="warn">' + esc(why) + '</div>';
+    const st = document.getElementById('ext-bar-step');
+    if (st) st.textContent = 'Not running';
+    extPaintSyncControls();
+  }, 7000);
 
   try {
     const r = await extAsk('syncNow', null, 8000);
-    if (r && r.alreadyRunning) extSetSyncBadge('Already running', 'checking');
+    if (r && r.alreadyRunning) { extState.sawRunning = true; extSetSyncBadge('Already running', 'checking'); }
   } catch (e) {
+    if (extState.syncWatchdog) { clearTimeout(extState.syncWatchdog); extState.syncWatchdog = null; }
     extState.syncing = false;
     extSetSyncBadge('Failed', 'error');
     if (log) log.innerHTML = '<div class="error">Could not start the sync: ' + esc(e.message) + '</div>' +
@@ -1803,6 +1829,11 @@ function extOnProgress(payload) {
   const wasSyncing = extState.syncing;
   extState.syncing = running;
 
+  if (running || (state.log && state.log.length) || state.done) {
+    extState.sawRunning = true;
+    if (extState.syncWatchdog) { clearTimeout(extState.syncWatchdog); extState.syncWatchdog = null; }
+  }
+
   if (running) {
     extSetSyncBadge('Running', 'checking');
   } else if (state.done) {
@@ -1847,22 +1878,31 @@ function tokPaint(data) {
   const copy = document.getElementById('tok-btn-copy');
   if (!input) return;
 
+  // The default tenant's token lives in Cloudflare (EXTENSION_TOKEN) and cannot be
+  // rotated from here — but it IS handed over now, so the card shows a real value
+  // and the collector connects itself like every other account.
+  const envManaged = !!(data && data.managed === 'env');
+  if (rotate) rotate.style.display = envManaged ? 'none' : '';
+
   if (data && data.ok && data.token) {
     input.value = data.token;
     input.type = 'text';
-    if (meta) meta.textContent = data.tokenRotatedAt
-      ? 'Issued ' + new Date(data.tokenRotatedAt).toLocaleString() + ' \u00b7 rotating it stops the old one immediately.'
-      : 'Rotating it stops the old one immediately.';
+    if (copy) copy.disabled = false;
+    if (meta) meta.textContent = envManaged
+      ? 'Shared environment token \u00b7 change it in Cloudflare (Settings \u2192 Variables and Secrets \u2192 EXTENSION_TOKEN), then redeploy.'
+      : data.tokenRotatedAt
+        ? 'Issued ' + new Date(data.tokenRotatedAt).toLocaleString() + ' \u00b7 rotating it stops the old one immediately.'
+        : 'Rotating it stops the old one immediately.';
     return;
   }
-  if (data && data.managed === 'env') {
-    input.value = 'Managed in Cloudflare (EXTENSION_TOKEN)';
-    if (meta) meta.textContent = 'This account uses the shared environment token, so it is not shown here.';
-    if (rotate) rotate.style.display = 'none';
+  if (envManaged) {
+    input.value = 'Not set';
     if (copy) copy.disabled = true;
+    if (meta) meta.textContent = 'EXTENSION_TOKEN is not set in Cloudflare, so there is no token to hand the collector. Set it under Settings \u2192 Variables and Secrets, then redeploy.';
     return;
   }
   input.value = 'Unavailable';
+  if (copy) copy.disabled = true;
   if (meta) meta.textContent = 'Could not load your token. Reload the page and try again.';
 }
 
