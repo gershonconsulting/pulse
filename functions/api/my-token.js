@@ -44,10 +44,34 @@ export async function onRequestGet(context) {
   if (!me) return forbidden();
   if (viewingSomeoneElse(context)) return notYours();
 
-  // Gershon's own tenant has no registry client — it uses the shared EXTENSION_TOKEN
-  // from the environment, which is deliberately not readable over the API.
+  // ── The default tenant (Gershon's own) ────────────────────────────────────
+  // It has no registry client, so its collector credential is the shared
+  // EXTENSION_TOKEN set in Cloudflare rather than a `pls_…` issued by /admin.
+  //
+  // This route used to withhold it on principle, which made the ONE account we
+  // actually run Pulse on the only account that could not self-connect: the
+  // dashboard's auto-connect dead-ended on `managed: 'env'`, the collector never
+  // received a token, and "Sync now" refused every run in silence (2026-08-28).
+  //
+  // Handing it over is safe. This route is session-only, and the default tenant is
+  // reachable ONLY by a super-admin or an ALLOWLIST email — both already hold a
+  // session cookie granting full read/write over exactly the data this token
+  // unlocks, so the token confers nothing they did not already have. It is still
+  // never readable by a bearer token (a leaked collector token cannot read itself),
+  // never handed to a CoHost viewing this tenant, and still not rotatable here —
+  // changing it means editing the Cloudflare variable and redeploying.
   if (!me.clientId) {
-    return json({ ok: true, clientId: null, token: null, managed: 'env' });
+    const shared = (context.env && context.env.EXTENSION_TOKEN) || null;
+    return json({
+      ok: true,
+      clientId: null,
+      token: shared || null,
+      managed: 'env',
+      rotatable: false,
+      message: shared
+        ? null
+        : 'EXTENSION_TOKEN is not set in Cloudflare, so there is no collector token to hand out.',
+    });
   }
 
   const client = findClient(await readAdminStore(context.env), me.clientId);
@@ -58,6 +82,7 @@ export async function onRequestGet(context) {
     clientId: client.id,
     token: client.extensionToken || null,
     tokenRotatedAt: client.tokenRotatedAt || null,
+    rotatable: true,
   });
 }
 
@@ -65,7 +90,14 @@ export async function onRequestPost(context) {
   const me = humanOf(context);
   if (!me) return forbidden();
   if (viewingSomeoneElse(context)) return notYours();
-  if (!me.clientId) return json({ ok: false, error: 'not-rotatable', message: 'This account uses the shared environment token.' }, 400);
+  // Still not rotatable: the default tenant's token is a Cloudflare variable, and
+  // rewriting it from here would not survive (env vars only apply on a new deploy).
+  if (!me.clientId) {
+    return json({
+      ok: false, error: 'not-rotatable',
+      message: 'This account uses the shared environment token. Change EXTENSION_TOKEN in Cloudflare, then redeploy.',
+    }, 400);
+  }
 
   const token = await rotateClientToken(context.env, me.clientId, me.session.email);
   if (!token) return json({ ok: false, error: 'not-found' }, 404);
