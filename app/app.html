@@ -16,6 +16,120 @@
     --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
 
+  /* Chart fills. --orange is tuned for badge TEXT contrast; as an adjacent fill
+     next to red it fails the normal-vision separation floor (ΔE 14.4), so charts
+     use the amber step instead (ΔE 24.1). Text keeps the darker token. */
+  :root { --c-red: #dc2626; --c-orange: #f59e0b; --c-green: #16a34a; --c-idle: #cbd5e1; }
+
+  /* ─── DASHBOARD: FILTER RAIL ─── */
+  .dash-rail {
+    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .rail-group { display: flex; align-items: center; gap: 9px; }
+  .rail-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .seg-btn {
+    border: none; background: none; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600;
+    color: var(--muted); padding: 5px 11px; border-radius: 6px; transition: all .12s;
+  }
+  .seg-btn:hover { color: var(--text); }
+  .seg-btn.active { background: var(--card); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .rail-select {
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 6px 10px; max-width: 220px;
+  }
+  .rail-clear {
+    margin-left: auto; border: 1px solid var(--border); background: var(--card); color: var(--muted);
+    font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .rail-clear:hover { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
+  .rail-clear[hidden] { display: none; }
+
+  .dash-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .dash-chips:empty { display: none; }
+  .dash-chip {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600;
+    background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; border-radius: 999px; padding: 5px 8px 5px 12px;
+  }
+  .dash-chip button { border: none; background: none; cursor: pointer; color: inherit; font-size: 14px; line-height: 1; opacity: .6; padding: 0 2px; }
+  .dash-chip button:hover { opacity: 1; }
+
+  /* ─── DASHBOARD: KPI STRIP ─── */
+  .kpi-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 1280px) { .kpi-strip { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px)  { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    position: relative; overflow: hidden; text-align: left; font: inherit; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--kpi-c, var(--accent));
+    border-radius: var(--radius); padding: 13px 14px 10px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 2px; transition: transform .12s, box-shadow .12s, border-color .12s;
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.10); }
+  .kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kpi.active { border-color: var(--kpi-c, var(--accent)); box-shadow: 0 0 0 2px var(--kpi-c, var(--accent)) inset, var(--shadow); }
+  .kpi.muted { opacity: .5; }
+  .kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; line-height: 1.3; }
+  .kpi-num { font-size: 30px; font-weight: 800; color: var(--kpi-c, var(--text)); line-height: 1.05; margin: 2px 0 0; }
+  .kpi-foot { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; min-height: 15px; }
+  .kpi-delta { font-weight: 800; }
+  .kpi-delta.good { color: var(--green); }
+  .kpi-delta.bad { color: var(--red); }
+  .kpi-delta.flat { color: var(--muted); }
+  .kpi-spark { display: block; width: 100%; height: 22px; margin-top: 6px; }
+  .kpi-drill {
+    position: absolute; right: 10px; bottom: 9px; font-size: 10px; font-weight: 700; color: var(--accent);
+    background: #e0f2fe; border-radius: 5px; padding: 2px 6px; opacity: 0; transition: opacity .12s;
+    pointer-events: none;
+  }
+  .kpi.active .kpi-drill { opacity: 1; }
+  .kpi-label { padding-right: 4px; }
+
+  /* ─── DASHBOARD: CARD GRID ─── */
+  .dash-grid { display: grid; gap: 14px; margin-bottom: 14px; }
+  .dash-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .dash-grid-2 { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 1100px) { .dash-grid-3, .dash-grid-2 { grid-template-columns: 1fr; } }
+  .dash-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px 18px; box-shadow: var(--shadow); min-width: 0; }
+  .dash-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .dash-card-h h3 { font-size: 14px; font-weight: 700; }
+  .dash-card-sub { font-size: 11px; color: var(--muted); }
+  .dash-card .scroll-x { overflow-x: auto; }
+
+  /* Horizontal quality bars */
+  .qbar-row { display: grid; grid-template-columns: 62px 1fr 40px; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 12px; }
+  .qbar-name { color: var(--muted); font-weight: 600; }
+  .qbar-track { display: block; background: var(--bg); border-radius: 5px; height: 18px; overflow: hidden; }
+  .qbar-fill { display: block; height: 100%; min-width: 3px; border-radius: 5px; transition: width .3s; }
+  .qbar-val { text-align: right; font-weight: 800; }
+
+  /* ─── INTERACTIVE CHART LAYER ─── */
+  .chart-tip {
+    position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -100%); transition: opacity .12s;
+    background: #0f172a; color: #fff; border-radius: 8px; padding: 8px 11px;
+    font-size: 12px; line-height: 1.45; box-shadow: 0 6px 20px rgba(15,23,42,.28);
+    max-width: 260px;
+  }
+  .chart-tip.on { opacity: 1; }
+  .chart-tip .tip-v { font-size: 15px; font-weight: 800; display: block; }
+  .chart-tip .tip-l { color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
+  .chart-tip .tip-key { width: 12px; height: 2px; border-radius: 2px; flex: none; }
+  .chart-tip .tip-hint { color: #94a3b8; font-size: 10px; margin-top: 4px; display: block; }
+
+  svg .mark { transition: opacity .12s; }
+  svg .mark:hover, svg .mark:focus { opacity: .82; outline: none; }
+  svg .mark.clickable { cursor: pointer; }
+  svg .mark.clickable:focus-visible { stroke: #0f172a; stroke-width: 2; }
+  svg .hit { fill: transparent; cursor: default; }
+  svg .hit.clickable { cursor: pointer; }
+  svg .crosshair { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+  svg .crosshair.on { opacity: 1; }
+  svg .dot-live { opacity: 0; }
+  svg .dot-live.on { opacity: 1; }
+  .chart-dim { opacity: .35; transition: opacity .15s; }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
 
@@ -584,7 +698,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.6.2</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.7.0</div>
   </div>
 </aside>
 
@@ -603,26 +717,63 @@
       </div>
     </div>
     <div class="container">
-      <div class="stats-row">
-        <div class="stat-card red">
-          <div class="stat-number" id="stat-red">&mdash;</div>
-          <div class="stat-label">Follow-up needed</div>
-          <div class="stat-desc">Questions, interest, action required</div>
+
+      <!-- ── Filter rail. Scopes every block, chart and list below it. ── -->
+      <div class="dash-rail">
+        <div class="rail-group">
+          <span class="rail-label">Period</span>
+          <div class="seg" id="dash-range" role="group" aria-label="Time period">
+            <button type="button" class="seg-btn" data-range="7">7d</button>
+            <button type="button" class="seg-btn" data-range="30">30d</button>
+            <button type="button" class="seg-btn" data-range="90">90d</button>
+            <button type="button" class="seg-btn active" data-range="all">All</button>
+          </div>
         </div>
-        <div class="stat-card orange">
-          <div class="stat-number" id="stat-orange">&mdash;</div>
-          <div class="stat-label">No action needed</div>
-          <div class="stat-desc">Declines, acknowledgments</div>
+        <div class="rail-group">
+          <span class="rail-label">Platform</span>
+          <div class="seg" id="dash-platform" role="group" aria-label="Platform">
+            <button type="button" class="seg-btn active" data-platform="all">All</button>
+            <button type="button" class="seg-btn" data-platform="linkedin">LinkedIn</button>
+            <button type="button" class="seg-btn" data-platform="sales-navigator">Sales Nav</button>
+          </div>
         </div>
-        <div class="stat-card green">
-          <div class="stat-number" id="stat-green">&mdash;</div>
-          <div class="stat-label">You sent last</div>
-          <div class="stat-desc">Awaiting their reply</div>
+        <div class="rail-group">
+          <span class="rail-label">Campaign</span>
+          <select id="dash-campaign" class="rail-select" aria-label="Campaign">
+            <option value="all">All campaigns</option>
+          </select>
         </div>
-        <div class="stat-card total">
-          <div class="stat-number" id="stat-total">&mdash;</div>
-          <div class="stat-label">Total conversations</div>
-          <div class="stat-desc">All classified messages</div>
+        <button type="button" class="rail-clear" id="dash-clear" onclick="dashClearAll()" hidden>Clear filters</button>
+      </div>
+
+      <div class="dash-chips" id="dash-chips"></div>
+
+      <!-- ── KPI strip. Click filters this page; click again to drill through. ── -->
+      <div class="kpi-strip" id="kpi-strip"></div>
+
+      <div class="dash-grid dash-grid-3">
+        <div class="dash-card">
+          <div class="dash-card-h"><h3>Response rate</h3><span class="dash-card-sub" id="dash-donut-sub">&mdash;</span></div>
+          <div id="dash-donut" class="donut-container"><div class="loading">Loading...</div></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-h"><h3>Status mix</h3><span class="dash-card-sub">Click a slice</span></div>
+          <div id="dash-status-donut" class="donut-container"><div class="loading">Loading...</div></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-h"><h3>Lead quality</h3><span class="dash-card-sub">By FIT</span></div>
+          <div id="dash-quality"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <div class="dash-grid dash-grid-2">
+        <div class="dash-card">
+          <div class="dash-card-h"><h3>Pipeline over time</h3><span class="dash-card-sub">Recent scans</span></div>
+          <div id="dash-pipeline" class="scroll-x"><div class="loading">Loading...</div></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-h"><h3>Campaign performance</h3><span class="dash-card-sub">Click a bar</span></div>
+          <div id="dash-campaigns" class="scroll-x"><div class="loading">Loading...</div></div>
         </div>
       </div>
 
@@ -645,22 +796,6 @@
         </div>
         <div class="progress-body" id="progress-body">
           <div class="loading">Loading...</div>
-        </div>
-      </div>
-
-      <!-- Response rate donut -->
-      <div class="dashboard-grid">
-        <div class="donut-card">
-          <h3>Response Rate</h3>
-          <div id="dash-donut" class="donut-container">
-            <div class="loading">Loading...</div>
-          </div>
-        </div>
-        <div class="donut-card">
-          <h3>Status Distribution</h3>
-          <div id="dash-status-donut" class="donut-container">
-            <div class="loading">Loading...</div>
-          </div>
         </div>
       </div>
     </div>
@@ -1098,7 +1233,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.6.2" readonly>
+            <input type="text" value="v5.7.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1988,6 +2123,7 @@ let currentCampaignFilter = "all";
 let campaignMetric = "response";
 let searchQuery = "";
 let statsData = { red: 0, orange: 0, green: 0, total: 0 };
+let lastSData = null;
 
 // ─── HELPERS ───
 function esc(str) {
@@ -2123,6 +2259,107 @@ function getMonthSortKey(d) {
 }
 
 // ─── SVG DONUT HELPER ───
+/* ═══════════════════════════════════════════════════════════════════════════
+   INTERACTIVE CHART LAYER
+   One tooltip, one set of delegated listeners, shared by every chart in the app.
+   A mark opts in by carrying data-tv (the value — the strong line) and data-tl
+   (the label). It becomes clickable by also carrying data-act / data-actval,
+   which the active page picks up through chartOnAction.
+   Labels come from captured LinkedIn text, so the tooltip is built with
+   textContent and never innerHTML.
+   ═══════════════════════════════════════════════════════════════════════════ */
+var chartOnAction = null;   // set by the page that owns the visible charts
+var _tipEl = null;
+
+function chartTip() {
+  if (!_tipEl) {
+    _tipEl = document.createElement('div');
+    _tipEl.className = 'chart-tip';
+    _tipEl.setAttribute('role', 'status');
+    document.body.appendChild(_tipEl);
+  }
+  return _tipEl;
+}
+
+function chartTipShow(el, x, y) {
+  var tip = chartTip();
+  tip.textContent = '';
+  var v = document.createElement('span');
+  v.className = 'tip-v';
+  v.textContent = el.getAttribute('data-tv') || '';
+  tip.appendChild(v);
+  var l = document.createElement('span');
+  l.className = 'tip-l';
+  var key = el.getAttribute('data-tk');
+  if (key) {
+    var k = document.createElement('span');
+    k.className = 'tip-key';
+    k.style.background = key;
+    l.appendChild(k);
+  }
+  l.appendChild(document.createTextNode(el.getAttribute('data-tl') || ''));
+  tip.appendChild(l);
+  if (el.getAttribute('data-act')) {
+    var h = document.createElement('span');
+    h.className = 'tip-hint';
+    h.textContent = 'Click to filter';
+    tip.appendChild(h);
+  }
+  tip.classList.add('on');
+  tip.style.left = x + 'px';
+  tip.style.top = (y - 12) + 'px';
+}
+
+function chartTipHide() { if (_tipEl) _tipEl.classList.remove('on'); }
+
+(function chartTipInit() {
+  function markOf(t) {
+    return t && t.closest ? t.closest('[data-tv]') : null;
+  }
+  document.addEventListener('pointermove', function (e) {
+    var m = markOf(e.target);
+    if (m) chartTipShow(m, e.clientX, e.clientY); else chartTipHide();
+  }, true);
+  document.addEventListener('pointerleave', chartTipHide, true);
+  document.addEventListener('scroll', chartTipHide, true);
+  // Keyboard parity: the same readout on focus.
+  document.addEventListener('focusin', function (e) {
+    var m = markOf(e.target);
+    if (!m) return;
+    var r = m.getBoundingClientRect();
+    chartTipShow(m, r.left + r.width / 2, r.top);
+  });
+  document.addEventListener('focusout', chartTipHide);
+  document.addEventListener('click', function (e) {
+    var m = markOf(e.target);
+    if (!m) return;
+    var act = m.getAttribute('data-act');
+    if (!act || typeof chartOnAction !== 'function') return;
+    chartOnAction(act, m.getAttribute('data-actval') || '');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var m = markOf(e.target);
+    if (!m || !m.getAttribute('data-act')) return;
+    e.preventDefault();
+    if (typeof chartOnAction === 'function') chartOnAction(m.getAttribute('data-act'), m.getAttribute('data-actval') || '');
+  });
+})();
+
+// Build the shared attribute soup for one interactive mark.
+function markAttrs(value, label, opts) {
+  opts = opts || {};
+  var a = ' class="' + (opts.cls || 'mark') + (opts.act ? ' clickable' : '') + '"' +
+    ' data-tv="' + escapeAttr(String(value)) + '"' +
+    ' data-tl="' + escapeAttr(String(label)) + '"';
+  if (opts.key) a += ' data-tk="' + escapeAttr(opts.key) + '"';
+  if (opts.act) {
+    a += ' data-act="' + escapeAttr(opts.act) + '" data-actval="' + escapeAttr(String(opts.actval == null ? '' : opts.actval)) + '"' +
+      ' tabindex="0" role="button" aria-label="' + escapeAttr(label + ': ' + value + '. Filter by this.') + '"';
+  }
+  return a;
+}
+
 function svgDonut(segments, size, innerLabel) {
   const r = 40;
   const circ = 2 * Math.PI * r;
@@ -2131,11 +2368,16 @@ function svgDonut(segments, size, innerLabel) {
   let arcs = "";
   segments.forEach(seg => {
     const dash = (seg.value / total) * circ;
+    const pct = Math.round((seg.value / total) * 100);
+    // 2px surface gap between adjacent fills — required separation when the
+    // CVD deltaE for a pair sits in the 6–8 band.
+    const gap = seg.value > 0 && segments.length > 1 ? 1.5 : 0;
     arcs += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + seg.color + '" stroke-width="12" ' +
-      'stroke-dasharray="' + dash + ' ' + (circ - dash) + '" stroke-dashoffset="' + offset + '"/>';
+      'stroke-dasharray="' + Math.max(dash - gap, 0) + ' ' + (circ - Math.max(dash - gap, 0)) + '" stroke-dashoffset="' + offset + '"' +
+      markAttrs(seg.value + ' (' + pct + '%)', seg.label, { key: seg.color, act: seg.act, actval: seg.actval }) + '/>';
     offset -= dash;
   });
-  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100">' +
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100" role="img">' +
     '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="#e2e8f0" stroke-width="12"/>' +
     arcs +
     '<text x="50" y="50" text-anchor="middle" dy=".3em" font-size="16" font-weight="800" fill="#0f172a">' + esc(String(innerLabel)) + '</text>' +
@@ -2169,11 +2411,19 @@ function svgBarChart(data, width, height) {
       // Grouped bar
       const h1 = (d.sent / maxVal) * chartH;
       const h2 = (d.replied / maxVal) * chartH;
-      bars += '<rect x="' + (x - barW - 1) + '" y="' + (pad.top + chartH - h1) + '" width="' + barW + '" height="' + h1 + '" fill="var(--accent)" rx="2" opacity="0.7"/>';
-      bars += '<rect x="' + (x + 1) + '" y="' + (pad.top + chartH - h2) + '" width="' + barW + '" height="' + h2 + '" fill="var(--red)" rx="2" opacity="0.7"/>';
+      bars += '<rect x="' + (x - barW - 1) + '" y="' + (pad.top + chartH - h1) + '" width="' + barW + '" height="' + h1 + '" fill="var(--accent)" rx="2" opacity="0.7"' +
+        markAttrs(d.sent, d.label + ' · sent', { key: '#0077b5' }) + '/>';
+      bars += '<rect x="' + (x + 1) + '" y="' + (pad.top + chartH - h2) + '" width="' + barW + '" height="' + h2 + '" fill="var(--red)" rx="2" opacity="0.7"' +
+        markAttrs(d.replied, d.label + ' · replied', { key: '#dc2626' }) + '/>';
     } else {
       const bh = (d.value / maxVal) * chartH;
-      bars += '<rect x="' + (x - barW / 2) + '" y="' + (pad.top + chartH - bh) + '" width="' + barW + '" height="' + bh + '" fill="' + (d.color || 'var(--accent)') + '" rx="2"/>';
+      const col = d.color || 'var(--accent)';
+      bars += '<rect x="' + (x - barW / 2) + '" y="' + (pad.top + chartH - bh) + '" width="' + barW + '" height="' + bh + '" fill="' + col + '" rx="2"' +
+        markAttrs(d.value, d.label, { key: d.color || '#0077b5', act: d.act, actval: d.actval }) + '/>';
+      // A short bar is a pinpoint; give the whole column a hit target so the
+      // value is reachable without aiming at 3 pixels.
+      bars += '<rect x="' + (x - gap / 2) + '" y="' + pad.top + '" width="' + gap + '" height="' + chartH + '"' +
+        markAttrs(d.value, d.label, { key: d.color || '#0077b5', act: d.act, actval: d.actval, cls: 'hit' }) + '/>';
     }
     // label
     bars += '<text x="' + x + '" y="' + (h - pad.bottom + 16) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-35 ' + x + ' ' + (h - pad.bottom + 16) + ')">' + esc(d.label) + '</text>';
@@ -2205,11 +2455,17 @@ function svgLineChart(data, width, height) {
   let points = "";
   let circles = "";
   let labels = "";
+  let hits = "";
   data.forEach((d, i) => {
     const x = pad.left + i * gap;
     const y = pad.top + chartH - (d.value / maxVal) * chartH;
     points += (i === 0 ? "M" : "L") + x + "," + y + " ";
-    circles += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="var(--accent)"/>';
+    // 8px marker minimum, with a 2px surface ring so it reads over the fill.
+    circles += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="var(--accent)" stroke="#fff" stroke-width="2"/>';
+    // The reader aims at a date, not at a 2px line: each X owns a full-height
+    // band, so the pointer only has to be nearest — never dead-centre.
+    hits += '<rect x="' + (x - gap / 2) + '" y="' + pad.top + '" width="' + Math.max(gap, 8) + '" height="' + chartH + '"' +
+      markAttrs(d.value, d.label, { key: '#0077b5', act: d.act, actval: d.actval, cls: 'hit' }) + '/>';
     if (data.length <= 12 || i % Math.ceil(data.length / 10) === 0) {
       labels += '<text x="' + x + '" y="' + (h - pad.bottom + 16) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-35 ' + x + ' ' + (h - pad.bottom + 16) + ')">' + esc(d.label) + '</text>';
     }
@@ -2229,10 +2485,10 @@ function svgLineChart(data, width, height) {
   const bottom = pad.top + chartH;
   const area = '<path d="' + points + 'L' + lastX + ',' + bottom + ' L' + firstX + ',' + bottom + ' Z" fill="var(--accent)" opacity="0.08"/>';
 
-  return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:' + h + 'px">' +
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:' + h + 'px" role="img">' +
     yAxis + area +
     '<path d="' + points + '" fill="none" stroke="var(--accent)" stroke-width="2"/>' +
-    circles + labels + '</svg>';
+    circles + labels + hits + '</svg>';
 }
 
 
@@ -2250,6 +2506,7 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
     // Close mobile sidebar
     document.querySelector('.sidebar').classList.remove('open');
 
+    if (page === 'dashboard') renderDashboard();
     if (page === 'conversations') renderMessages(filterMessages());
     if (page === 'growth') renderGrowth();
     if (page === 'analytics') renderAnalytics();
@@ -2308,11 +2565,7 @@ async function loadAllData() {
 }
 
 function updateDashboard(sData) {
-  // Stat cards
-  document.getElementById("stat-red").textContent = statsData.followup;
-  document.getElementById("stat-orange").textContent = statsData.orange;
-  document.getElementById("stat-green").textContent = statsData.green;
-  document.getElementById("stat-total").textContent = statsData.total;
+  lastSData = sData || lastSData;
 
   // Filter badges
   document.getElementById("badge-all").textContent = statsData.total;
@@ -2340,61 +2593,12 @@ function updateDashboard(sData) {
     document.getElementById("last-scan").textContent = "No scans yet — use the Chrome extension to collect messages";
   }
 
-  // Hot leads (FIT: High + INTEREST: High)
-  const hotLeads = allMessages.filter(m =>
-    m.fit && m.fit.toLowerCase() === "high" &&
-    m.interest && m.interest.toLowerCase() === "high"
-  ).slice(0, 5);
-
-  const hotBody = document.getElementById("hot-leads-body");
-  if (hotLeads.length === 0) {
-    hotBody.innerHTML = '<div class="empty-state" style="padding:20px"><p>No high-FIT, high-INTEREST leads found yet</p></div>';
-  } else {
-    hotBody.innerHTML = hotLeads.map((m, i) =>
-      '<div class="hot-lead-item">' +
-        '<div class="hot-lead-rank">' + (i + 1) + '</div>' +
-        '<div class="hot-lead-info">' +
-          '<div class="hot-lead-name"><a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="lead-link">' + esc(m.name) + '</a></div>' +
-          '<div class="hot-lead-snippet"><a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="lead-link-muted">' + esc(m.snippet || "(no preview)") + '</a></div>' +
-          ((m.timestamp || m.date) ? '<div class="hot-lead-date">' + esc(formatDate(m.timestamp || m.date)) + '</div>' : '') +
-        '</div>' +
-        '<a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-profile">Profile &#8599;</a>' +
-        '<a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-reply">Open chat &rarr;</a>' +
-      '</div>'
-    ).join("");
-  }
-
   // Progress Tracker
   renderProgressTracker(sData);
 
-  // Response rate donut (Replied=Red vs Awaiting=Green+Orange)
-  const replied = statsData.red;
-  const awaiting = statsData.green + statsData.orange;
-  const respRate = statsData.total ? Math.round((replied / statsData.total) * 100) : 0;
-  document.getElementById("dash-donut").innerHTML = statsData.total === 0 ?
-    '<div class="empty-state"><p>No data yet</p></div>' :
-    svgDonut([
-      { value: replied, color: "#dc2626", label: "Replied (need follow-up)" },
-      { value: awaiting, color: "#e2e8f0", label: "Awaiting reply" }
-    ], 140, respRate + "%") +
-    legendHtml([
-      { value: replied, color: "#dc2626", label: "Replied" },
-      { value: awaiting, color: "#94a3b8", label: "Awaiting" }
-    ]);
-
-  // Status donut
-  document.getElementById("dash-status-donut").innerHTML = statsData.total === 0 ?
-    '<div class="empty-state"><p>No data yet</p></div>' :
-    svgDonut([
-      { value: statsData.red, color: "#dc2626", label: "Red" },
-      { value: statsData.orange, color: "#d97706", label: "Orange" },
-      { value: statsData.green, color: "#16a34a", label: "Green" }
-    ], 140, statsData.total) +
-    legendHtml([
-      { value: statsData.red, color: "#dc2626", label: "Follow-up" },
-      { value: statsData.orange, color: "#d97706", label: "No action" },
-      { value: statsData.green, color: "#16a34a", label: "You sent last" }
-    ]);
+  // The Dashboard itself
+  dashPopulateCampaigns();
+  renderDashboard();
 
   // Render active page
   const activePage = document.querySelector('.page-view.active');
@@ -2407,6 +2611,354 @@ function updateDashboard(sData) {
     else if (id === 'logs') renderLogs();
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DASHBOARD
+   Two layers of filter, deliberately:
+     • the RAIL (period / platform / campaign) scopes everything on the page —
+       every block, chart and list re-renders against the same slice, so the
+       numbers on screen always agree with each other;
+     • a KPI BLOCK narrows that slice further. Clicking the block that is
+       already active is the drill-through: it hands the same filter to the
+       Conversations page, where you can act on the rows.
+   ═══════════════════════════════════════════════════════════════════════════ */
+var dashFilter = { range: 'all', platform: 'all', campaign: 'all', kpi: null };
+
+var DASH_KPIS = [
+  { key: 'followup', label: 'Follow-up needed', color: 'var(--c-red)',    conv: 'Red',    scan: 'red',
+    hint: 'Their turn, not handled', test: function (m) { return normalizeStatus(m.status) === 'Red' && !m.done; } },
+  { key: 'orange',   label: 'No action needed', color: 'var(--c-orange)', conv: 'Orange', scan: 'orange',
+    hint: 'Declines, acknowledgements', test: function (m) { return normalizeStatus(m.status) === 'Orange'; } },
+  { key: 'green',    label: 'You sent last',    color: 'var(--c-green)',  conv: 'Green',  scan: 'green',
+    hint: 'Awaiting their reply', test: function (m) { return normalizeStatus(m.status) === 'Green'; } },
+  { key: 'focus',    label: 'Starred',          color: '#7c3aed',         conv: 'focus',
+    hint: 'Flagged by you', test: function (m) { return !!m.focus; } },
+  { key: 'done',     label: 'Handled',          color: '#0f766e',         conv: 'done',
+    hint: 'Checked off', test: function (m) { return !!m.done; } },
+  { key: 'total',    label: 'Conversations',    color: 'var(--accent)',   conv: 'all',
+    hint: 'In the current view', test: function () { return true; } }
+];
+
+function dashKpi(key) {
+  for (var i = 0; i < DASH_KPIS.length; i++) if (DASH_KPIS[i].key === key) return DASH_KPIS[i];
+  return null;
+}
+
+// Rail-scoped messages. The KPI block is applied on top of this, so the strip
+// can still show every count against the same denominator.
+function dashScope() {
+  var cutoff = null;
+  if (dashFilter.range !== 'all') {
+    cutoff = Date.now() - parseInt(dashFilter.range, 10) * 86400000;
+  }
+  return allMessages.filter(function (m) {
+    if (dashFilter.platform !== 'all' && platformOf(m) !== dashFilter.platform) return false;
+    if (dashFilter.campaign !== 'all' && m.campaign !== dashFilter.campaign) return false;
+    if (cutoff !== null) {
+      var d = parseMsgDate(m.timestamp || m.date);
+      if (!d || d.getTime() < cutoff) return false;
+    }
+    return true;
+  });
+}
+
+function dashSlice() {
+  var msgs = dashScope();
+  var k = dashFilter.kpi ? dashKpi(dashFilter.kpi) : null;
+  return k ? msgs.filter(k.test) : msgs;
+}
+
+function dashRailIsDefault() {
+  return dashFilter.range === 'all' && dashFilter.platform === 'all' && dashFilter.campaign === 'all';
+}
+
+// ── Clicking a KPI block ───────────────────────────────────────────────────
+function dashClickKpi(key) {
+  if (dashFilter.kpi === key) { dashDrill(key); return; }   // second click drills
+  dashFilter.kpi = key === 'total' ? null : key;
+  renderDashboard();
+}
+
+// Hand the same filter to Conversations, where the rows can be acted on.
+function dashDrill(key) {
+  var k = dashKpi(key);
+  if (!k) return;
+
+  currentFilter = k.conv;
+  document.querySelectorAll('.filter-tab').forEach(function (t) {
+    t.classList.toggle('active', t.dataset.filter === k.conv);
+  });
+
+  // Carry the rail across so the drill-through shows the same population.
+  currentPlatform = dashFilter.platform;
+  document.querySelectorAll('.platform-tab').forEach(function (t) {
+    t.classList.toggle('active', t.dataset.platform === dashFilter.platform);
+  });
+  currentCampaignFilter = dashFilter.campaign;
+  var cs = document.getElementById('campaign-filter');
+  if (cs) cs.value = dashFilter.campaign;
+
+  document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
+  document.querySelectorAll('.page-view').forEach(function (v) { v.classList.remove('active'); });
+  document.querySelector('[data-page="conversations"]').classList.add('active');
+  document.getElementById('page-conversations').classList.add('active');
+  renderMessages(filterMessages());
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function dashClearAll() {
+  dashFilter = { range: 'all', platform: 'all', campaign: 'all', kpi: null };
+  document.querySelectorAll('#dash-range .seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.range === 'all'); });
+  document.querySelectorAll('#dash-platform .seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.platform === 'all'); });
+  var cs = document.getElementById('dash-campaign');
+  if (cs) cs.value = 'all';
+  renderDashboard();
+}
+
+function dashPopulateCampaigns() {
+  var sel = document.getElementById('dash-campaign');
+  if (!sel) return;
+  var campaigns = [...new Set(allMessages.map(function (m) { return m.campaign; }).filter(Boolean))].sort();
+  if (sel.dataset.filled === String(campaigns.length) ) return;
+  sel.dataset.filled = String(campaigns.length);
+  sel.innerHTML = '<option value="all">All campaigns</option>' +
+    campaigns.map(function (c) {
+      return '<option value="' + escapeAttr(c) + '"' + (c === dashFilter.campaign ? ' selected' : '') + '>' + esc(c) + '</option>';
+    }).join('');
+}
+
+// ── Chips: what is currently narrowing the page, each one removable ────────
+function dashRenderChips() {
+  var host = document.getElementById('dash-chips');
+  if (!host) return;
+  var chips = [];
+  if (dashFilter.range !== 'all') chips.push({ text: 'Last ' + dashFilter.range + ' days', clear: "dashSetRange('all')" });
+  if (dashFilter.platform !== 'all') chips.push({ text: dashFilter.platform === 'linkedin' ? 'LinkedIn' : 'Sales Navigator', clear: "dashSetPlatform('all')" });
+  if (dashFilter.campaign !== 'all') chips.push({ text: 'Campaign: ' + dashFilter.campaign, clear: "dashSetCampaign('all')" });
+  if (dashFilter.kpi) {
+    var k = dashKpi(dashFilter.kpi);
+    if (k) chips.push({ text: k.label, clear: "dashClearKpi()" });
+  }
+  host.innerHTML = chips.map(function (c) {
+    return '<span class="dash-chip">' + esc(c.text) +
+      '<button type="button" aria-label="Remove filter" onclick="' + c.clear + '">&times;</button></span>';
+  }).join('');
+  var clear = document.getElementById('dash-clear');
+  if (clear) clear.hidden = chips.length === 0;
+}
+
+function dashSetRange(v) {
+  dashFilter.range = v;
+  document.querySelectorAll('#dash-range .seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.range === v); });
+  renderDashboard();
+}
+function dashSetPlatform(v) {
+  dashFilter.platform = v;
+  document.querySelectorAll('#dash-platform .seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.platform === v); });
+  renderDashboard();
+}
+function dashSetCampaign(v) {
+  dashFilter.campaign = v;
+  var sel = document.getElementById('dash-campaign');
+  if (sel) sel.value = v;
+  renderDashboard();
+}
+function dashClearKpi() { dashFilter.kpi = null; renderDashboard(); }
+
+// A 22px sparkline of this metric across the recent scans. Decoration with a
+// job: it says whether today's number is a spike or the trend.
+function dashSpark(series, color) {
+  if (!series || series.length < 2) return '<svg class="kpi-spark" aria-hidden="true"></svg>';
+  var w = 100, h = 22, max = Math.max.apply(null, series), min = Math.min.apply(null, series);
+  var span = (max - min) || 1;
+  var step = w / (series.length - 1);
+  var pts = series.map(function (v, i) {
+    return (i === 0 ? 'M' : 'L') + (i * step).toFixed(1) + ',' + (h - 2 - ((v - min) / span) * (h - 6)).toFixed(1);
+  }).join(' ');
+  return '<svg class="kpi-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path d="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.5" opacity=".55"/></svg>';
+}
+
+function renderDashboard() {
+  var scope = dashScope();
+  var slice = dashSlice();
+  var scopeStats = recountStats(scope);
+  var sliceStats = recountStats(slice);
+
+  dashRenderChips();
+
+  // ── KPI strip ────────────────────────────────────────────────────────────
+  // Scans give a real previous value, but only when the rail is at its default
+  // — a scan row is a whole-account snapshot and cannot be re-sliced.
+  var scans = (lastSData && lastSData.scans) || allScans || [];
+  var showTrend = dashRailIsDefault() && scans.length >= 2;
+
+  document.getElementById('kpi-strip').innerHTML = DASH_KPIS.map(function (k) {
+    var n = k.key === 'total' ? scope.length : scope.filter(k.test).length;
+    var foot = '<span>' + esc(k.hint) + '</span>';
+    var spark = '';
+
+    if (showTrend && k.scan) {
+      var series = scans.slice(0, 12).reverse().map(function (sc) { return sc[k.scan] || 0; });
+      var prev = scans[1][k.scan] || 0;
+      var now = scans[0][k.scan] || 0;
+      var d = now - prev;
+      // For follow-ups, down is good; for the rest, up is just up.
+      var cls = d === 0 ? 'flat' : (k.key === 'followup' ? (d < 0 ? 'good' : 'bad') : (d > 0 ? 'good' : 'flat'));
+      var arrow = d === 0 ? '&#8722;' : (d > 0 ? '&#9650;' : '&#9660;');
+      foot = '<span class="kpi-delta ' + cls + '">' + arrow + ' ' + Math.abs(d) + '</span><span>vs last scan</span>';
+      spark = dashSpark(series, k.color);
+    }
+
+    var active = dashFilter.kpi === k.key || (k.key === 'total' && !dashFilter.kpi);
+    var muted = dashFilter.kpi && !active;
+    return '<button type="button" class="kpi' + (active ? ' active' : '') + (muted ? ' muted' : '') + '"' +
+      ' style="--kpi-c:' + k.color + '" onclick="dashClickKpi(\'' + k.key + '\')"' +
+      ' aria-pressed="' + (active ? 'true' : 'false') + '">' +
+      '<span class="kpi-drill">Open &rarr;</span>' +
+      '<span class="kpi-label">' + esc(k.label) + '</span>' +
+      '<span class="kpi-num">' + n + '</span>' +
+      '<span class="kpi-foot">' + foot + '</span>' +
+      spark +
+      '</button>';
+  }).join('');
+
+  // Charts on this page answer to the KPI strip.
+  chartOnAction = function (act, val) {
+    if (act === 'kpi') dashClickKpi(val);
+    else if (act === 'campaign') dashSetCampaign(dashFilter.campaign === val ? 'all' : val);
+  };
+
+  // ── Response rate ────────────────────────────────────────────────────────
+  var replied = scopeStats.red;
+  var awaiting = scopeStats.green + scopeStats.orange;
+  var respRate = scopeStats.total ? Math.round((replied / scopeStats.total) * 100) : 0;
+  var sub = document.getElementById('dash-donut-sub');
+  if (sub) sub.textContent = scopeStats.total ? replied + ' of ' + scopeStats.total + ' replied' : '—';
+  document.getElementById('dash-donut').innerHTML = scopeStats.total === 0 ?
+    '<div class="empty-state"><p>Nothing in this view</p></div>' :
+    svgDonut([
+      { value: replied, color: 'var(--c-red)', label: 'Replied — needs follow-up', act: 'kpi', actval: 'followup' },
+      { value: awaiting, color: '#e2e8f0', label: 'Awaiting reply' }
+    ], 140, respRate + '%') +
+    legendHtml([
+      { value: replied, color: 'var(--c-red)', label: 'Replied' },
+      { value: awaiting, color: '#94a3b8', label: 'Awaiting' }
+    ]);
+
+  // ── Status mix ───────────────────────────────────────────────────────────
+  // Mutually exclusive on purpose: a handled conversation is counted once, as
+  // handled, so these four sum to the total and every slice matches the block
+  // above it. Anything else and the donut and the strip tell different stories.
+  var handled = scope.filter(function (m) { return !!m.done; }).length;
+  var mix = [
+    { value: scope.filter(function (m) { return normalizeStatus(m.status) === 'Red' && !m.done; }).length,
+      color: 'var(--c-red)', label: 'Follow-up needed', act: 'kpi', actval: 'followup' },
+    { value: scope.filter(function (m) { return normalizeStatus(m.status) === 'Orange' && !m.done; }).length,
+      color: 'var(--c-orange)', label: 'No action needed', act: 'kpi', actval: 'orange' },
+    { value: scope.filter(function (m) { return normalizeStatus(m.status) === 'Green' && !m.done; }).length,
+      color: 'var(--c-green)', label: 'You sent last', act: 'kpi', actval: 'green' },
+    { value: handled, color: '#0f766e', label: 'Handled', act: 'kpi', actval: 'done' }
+  ];
+  document.getElementById('dash-status-donut').innerHTML = scopeStats.total === 0 ?
+    '<div class="empty-state"><p>Nothing in this view</p></div>' :
+    svgDonut(mix, 140, scopeStats.total) + legendHtml(mix);
+
+  // ── Lead quality by FIT ──────────────────────────────────────────────────
+  var qHost = document.getElementById('dash-quality');
+  var buckets = [
+    { name: 'High', color: 'var(--c-green)' },
+    { name: 'Medium', color: 'var(--c-orange)' },
+    { name: 'Low', color: 'var(--c-idle)' },
+    { name: 'Unknown', color: '#e2e8f0' }
+  ];
+  var counts = buckets.map(function (b) {
+    return slice.filter(function (m) {
+      var f = (m.fit || '').toLowerCase();
+      if (b.name === 'Unknown') return !f || ['high', 'medium', 'low'].indexOf(f) === -1;
+      return f === b.name.toLowerCase();
+    }).length;
+  });
+  var qMax = Math.max.apply(null, counts.concat([1]));
+  qHost.innerHTML = slice.length === 0
+    ? '<div class="empty-state"><p>Nothing in this view</p></div>'
+    : buckets.map(function (b, i) {
+        var pct = Math.round((counts[i] / qMax) * 100);
+        return '<div class="qbar-row">' +
+          '<span class="qbar-name">' + esc(b.name) + '</span>' +
+          '<span class="qbar-track"><span class="qbar-fill" style="width:' + pct + '%;background:' + b.color + '"' +
+            ' data-tv="' + counts[i] + '" data-tl="FIT ' + escapeAttr(b.name) + '" data-tk="' + escapeAttr(b.color) + '"></span></span>' +
+          '<span class="qbar-val">' + counts[i] + '</span>' +
+          '</div>';
+      }).join('');
+
+  // ── Pipeline over time ───────────────────────────────────────────────────
+  var pipeHost = document.getElementById('dash-pipeline');
+  if (scans.length >= 2) {
+    var pipe = scans.slice(0, 14).reverse().map(function (sc) {
+      return {
+        label: formatDate(sc.timestamp),
+        red: sc.red || 0, orange: sc.orange || 0, green: sc.green || 0
+      };
+    });
+    pipeHost.innerHTML = svgStackedBarChart(pipe, 620, 230);
+  } else {
+    pipeHost.innerHTML = '<div class="empty-state"><p>Two scans are needed before a trend exists</p></div>';
+  }
+
+  // ── Campaign performance ─────────────────────────────────────────────────
+  var campHost = document.getElementById('dash-campaigns');
+  var byCamp = {};
+  scope.forEach(function (m) {
+    var c = m.campaign || 'Uncategorised';
+    if (!byCamp[c]) byCamp[c] = 0;
+    byCamp[c]++;
+  });
+  var campRows = Object.keys(byCamp).map(function (c) {
+    return { label: c.length > 14 ? c.slice(0, 13) + '…' : c, value: byCamp[c], full: c };
+  }).sort(function (a, b) { return b.value - a.value; }).slice(0, 8);
+
+  campHost.innerHTML = campRows.length === 0
+    ? '<div class="empty-state"><p>No campaigns detected yet</p></div>'
+    : svgBarChart(campRows.map(function (r) {
+        return { label: r.label, value: r.value, color: '#0077b5', act: 'campaign', actval: r.full };
+      }), 620, 230);
+
+  // ── Hottest leads, inside the current view ───────────────────────────────
+  var hot = slice.filter(function (m) {
+    return m.fit && m.fit.toLowerCase() === 'high' && m.interest && m.interest.toLowerCase() === 'high';
+  }).slice(0, 5);
+  var hotBody = document.getElementById('hot-leads-body');
+  if (!hot.length) {
+    hotBody.innerHTML = '<div class="empty-state" style="padding:20px"><p>No high-FIT, high-INTEREST leads in this view</p></div>';
+  } else {
+    hotBody.innerHTML = hot.map(function (m, i) {
+      return '<div class="hot-lead-item">' +
+        '<div class="hot-lead-rank">' + (i + 1) + '</div>' +
+        '<div class="hot-lead-info">' +
+          '<div class="hot-lead-name"><a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="lead-link">' + esc(m.name) + '</a></div>' +
+          '<div class="hot-lead-snippet"><a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="lead-link-muted">' + esc(m.snippet || '(no preview)') + '</a></div>' +
+          ((m.timestamp || m.date) ? '<div class="hot-lead-date">' + esc(formatDate(m.timestamp || m.date)) + '</div>' : '') +
+        '</div>' +
+        '<a href="' + escapeAttr(personLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-profile">Profile &#8599;</a>' +
+        '<a href="' + escapeAttr(threadLink(m)) + '" target="_blank" rel="noopener" class="hot-lead-reply">Open chat &rarr;</a>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+// Rail wiring
+document.getElementById('dash-range').addEventListener('click', function (e) {
+  var b = e.target.closest('.seg-btn');
+  if (b) dashSetRange(b.dataset.range);
+});
+document.getElementById('dash-platform').addEventListener('click', function (e) {
+  var b = e.target.closest('.seg-btn');
+  if (b) dashSetPlatform(b.dataset.platform);
+});
+document.getElementById('dash-campaign').addEventListener('change', function (e) {
+  dashSetCampaign(e.target.value);
+});
 
 function updateFooterStatus(ok) {
   const dot = document.getElementById("footer-status-dot");
@@ -2784,6 +3336,7 @@ document.getElementById("campaign-filter").addEventListener("change", function(e
 
 // ─── GROWTH ───
 function renderGrowth() {
+  chartOnAction = null;
   var now = new Date();
   var TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
   var ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -2987,10 +3540,18 @@ function svgStackedBarChart(data, width, height) {
     var hOrange = (d.orange / maxVal) * chartH;
     var hGreen = (d.green / maxVal) * chartH;
     var yBase = pad.top + chartH;
-    // Stack: green bottom, orange middle, red top
-    bars += '<rect x="' + x + '" y="' + (yBase - hGreen) + '" width="' + barW + '" height="' + hGreen + '" fill="var(--green)" rx="1"/>';
-    bars += '<rect x="' + x + '" y="' + (yBase - hGreen - hOrange) + '" width="' + barW + '" height="' + hOrange + '" fill="var(--orange)" rx="1"/>';
-    bars += '<rect x="' + x + '" y="' + (yBase - hGreen - hOrange - hRed) + '" width="' + barW + '" height="' + hRed + '" fill="var(--red)" rx="1"/>';
+    var _tot = (d.red || 0) + (d.orange || 0) + (d.green || 0);
+    // Stack: green bottom, orange middle, red top. Each segment loses 2px off
+    // its top so the surface shows through between fills — the separation the
+    // red/amber pair needs to stay legible under protanopia.
+    var seg = function (yTop, hh, fill, key, name, val) {
+      if (hh <= 0) return '';
+      return '<rect x="' + x + '" y="' + yTop + '" width="' + barW + '" height="' + Math.max(hh - 2, 1) + '" fill="' + fill + '" rx="1"' +
+        markAttrs(val + ' of ' + _tot, d.label + ' · ' + name, { key: key }) + '/>';
+    };
+    bars += seg(yBase - hGreen, hGreen, 'var(--c-green)', '#16a34a', 'You sent last', d.green);
+    bars += seg(yBase - hGreen - hOrange, hOrange, 'var(--c-orange)', '#f59e0b', 'No action needed', d.orange);
+    bars += seg(yBase - hGreen - hOrange - hRed, hRed, 'var(--c-red)', '#dc2626', 'Follow-up needed', d.red);
     bars += '<text x="' + (x + barW / 2) + '" y="' + (h - pad.bottom + 16) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-35 ' + (x + barW / 2) + ' ' + (h - pad.bottom + 16) + ')">' + esc(d.label) + '</text>';
   });
 
@@ -3004,10 +3565,10 @@ function svgStackedBarChart(data, width, height) {
   }
 
   // Legend
-  var legend = '<g transform="translate(' + (w - 200) + ', 8)">' +
-    '<rect x="0" y="0" width="10" height="10" fill="var(--red)" rx="2"/><text x="14" y="9" font-size="10" fill="var(--muted)">Need action</text>' +
-    '<rect x="80" y="0" width="10" height="10" fill="var(--orange)" rx="2"/><text x="94" y="9" font-size="10" fill="var(--muted)">No action</text>' +
-    '<rect x="155" y="0" width="10" height="10" fill="var(--green)" rx="2"/><text x="169" y="9" font-size="10" fill="var(--muted)">Sent last</text>' +
+  var legend = '<g transform="translate(' + (w - 245) + ', 8)">' +
+    '<rect x="0" y="0" width="10" height="10" fill="var(--c-red)" rx="2"/><text x="14" y="9" font-size="10" fill="var(--muted)">Need action</text>' +
+    '<rect x="80" y="0" width="10" height="10" fill="var(--c-orange)" rx="2"/><text x="94" y="9" font-size="10" fill="var(--muted)">No action</text>' +
+    '<rect x="155" y="0" width="10" height="10" fill="var(--c-green)" rx="2"/><text x="169" y="9" font-size="10" fill="var(--muted)">Sent last</text>' +
     '</g>';
 
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:' + h + 'px">' + yAxis + bars + legend + '</svg>';
@@ -3015,6 +3576,7 @@ function svgStackedBarChart(data, width, height) {
 
 // ─── ANALYTICS ───
 function renderAnalytics() {
+  chartOnAction = null;
   var msgs = allMessages;
 
   // Group by week
