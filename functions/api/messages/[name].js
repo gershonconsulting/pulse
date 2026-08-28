@@ -35,6 +35,11 @@ export async function onRequestPatch(context) {
     if (done !== undefined) {
       msg.done = !!done;
       msg.doneAt = done ? new Date().toISOString() : null;
+      // Checking a conversation clears its star: a handled lead is no longer a
+      // focus item. An explicit focus in the same request still wins.
+      if (msg.done && focus === undefined) {
+        msg.focus = false;
+      }
     }
     msg.updatedAt = new Date().toISOString();
 
