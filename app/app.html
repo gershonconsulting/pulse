@@ -468,6 +468,17 @@
   .settings-form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
   .settings-form-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,119,181,0.15); }
   .settings-form-group .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  /* Collecting Session radio cards (Settings -> This computer) */
+  .radio-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .radio-opt { flex: 1; min-width: 250px; display: flex !important; gap: 11px; align-items: flex-start;
+               padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+               margin-bottom: 0 !important; font-weight: 400 !important; transition: border-color .15s, background .15s; }
+  .radio-opt:hover { border-color: var(--accent); }
+  .radio-opt input[type="radio"] { width: 16px; height: 16px; margin: 2px 0 0 0; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
+  .radio-opt.checked { border-color: var(--accent); background: rgba(0,119,181,0.06); box-shadow: inset 0 0 0 1px var(--accent); }
+  .radio-body { display: flex; flex-direction: column; gap: 3px; }
+  .radio-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .radio-sub { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 
   /* ─── EXTENSION PAGE ─── */
   .ext-hero { display: flex; align-items: center; gap: 18px; padding: 22px 24px; }
@@ -698,7 +709,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.7.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.8.0</div>
   </div>
 </aside>
 
@@ -1049,7 +1060,7 @@
     <div class="page-header">
       <div>
         <h2>Extension</h2>
-        <div class="header-sub">Install, verify and run the Pulse LinkedIn Collector</div>
+        <div class="header-sub" id="ext-header-sub">Install, verify and run the Pulse LinkedIn Collector</div>
       </div>
       <div class="header-actions">
         <button class="refresh-btn" onclick="extRunSelfTest()">Re-run checks</button>
@@ -1092,7 +1103,7 @@
       <!-- ── Self-test ── -->
       <div class="settings-section">
         <div class="settings-section-header">
-          <h3>Installation check</h3>
+          <h3 id="ext-check-title">Installation check</h3>
           <button class="run-diag-btn" id="ext-btn-selftest" onclick="extRunSelfTest()">Run checks</button>
         </div>
         <div class="settings-section-body" id="ext-check-list">
@@ -1101,7 +1112,7 @@
       </div>
 
       <!-- ── Sync now ── -->
-      <div class="settings-section">
+      <div class="settings-section" id="ext-sync-card">
         <div class="settings-section-header">
           <h3>Run a sync</h3>
           <span class="diag-badge pending" id="ext-sync-badge">Idle</span>
@@ -1129,7 +1140,7 @@
       </div>
 
       <!-- ── Install / update ── -->
-      <div class="settings-section">
+      <div class="settings-section" id="ext-install-card">
         <div class="settings-section-header">
           <h3>Install or update</h3>
           <span class="diag-badge pending">Latest: v<span id="ext-latest-version">1.17.0</span></span>
@@ -1163,7 +1174,7 @@
       </div>
 
       <!-- ── Troubleshooting ── -->
-      <div class="settings-section">
+      <div class="settings-section" id="ext-trouble-card">
         <div class="settings-section-header">
           <h3>If something looks wrong</h3>
         </div>
@@ -1194,6 +1205,37 @@
       </div>
     </div>
     <div class="container">
+
+      <!-- This computer (per-machine, localStorage only — never written to KV) -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>This computer</h3>
+          <span class="diag-badge pending" id="collect-state">&mdash;</span>
+        </div>
+        <div class="settings-section-body">
+          <div class="settings-form-group">
+            <label>Collecting Session</label>
+            <div class="radio-row">
+              <label class="radio-opt" id="collect-opt-on" for="collect-on">
+                <input type="radio" name="collect-mode" id="collect-on" value="on" onchange="collectSet('on')">
+                <span class="radio-body">
+                  <span class="radio-title">ON &mdash; this computer collects</span>
+                  <span class="radio-sub">The Pulse Chrome extension runs here and syncs LinkedIn &amp; Sales Navigator. Pulse checks that it is installed, current and connected, and warns you when it is not.</span>
+                </span>
+              </label>
+              <label class="radio-opt" id="collect-opt-off" for="collect-off">
+                <input type="radio" name="collect-mode" id="collect-off" value="off" onchange="collectSet('off')">
+                <span class="radio-body">
+                  <span class="radio-title">OFF &mdash; viewing only</span>
+                  <span class="radio-sub">No Chrome extension needed on this computer. Every extension warning is hidden here; you still see all the data collected from the collecting computer.</span>
+                </span>
+              </label>
+            </div>
+            <div class="hint" id="collect-hint"></div>
+            <div class="hint" style="margin-top:8px">Saved on <b>this computer only</b>. It is not part of your Pulse account, so the collecting machine and each viewer &mdash; including a client signed in with LinkedIn &mdash; sets its own.</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Diagnostics -->
       <div class="settings-section">
@@ -1233,7 +1275,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.7.0" readonly>
+            <input type="text" value="v5.8.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1481,6 +1523,90 @@ const EXT_BRIDGE_MIN_VERSION = '1.17.0';
 const EXT_AUTOCONNECT_MIN_VERSION = '1.18.0';
 window.__extAnnounced = false;
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLLECTING SESSION — a property of THIS COMPUTER, not of the account.
+
+   The same Pulse account is opened from several machines: one runs the Chrome
+   collector, the others (Olivier's other computers, a client, a CoHost) only
+   read the dashboard. So the flag lives in localStorage and is never sent to
+   KV — flipping it here must not change what anyone else sees.
+
+   OFF  = viewing only: the extension is not needed on this machine, and every
+          "extension missing / out of date / no token" warning is suppressed.
+   ON   = this machine collects: the checks behave exactly as before.
+
+   With no explicit choice yet, the mode resolves to ON as soon as a collector
+   announces itself in this browser — and is then PINNED to 'on', so a later
+   breakage on the collecting machine still shouts. A browser that has never
+   seen the collector resolves to OFF and stays quiet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const COLLECT_KEY = 'pulse_collecting';
+
+function collectRead() {
+  try { const v = localStorage.getItem(COLLECT_KEY); return (v === 'on' || v === 'off') ? v : null; }
+  catch (e) { return null; }
+}
+function collectWrite(v) { try { localStorage.setItem(COLLECT_KEY, v); } catch (e) {} }
+
+function isCollecting() {
+  const stored = collectRead();
+  if (stored) return stored === 'on';
+  return !!(window.extState && extState.version);   // provisional until pinned
+}
+
+// Called the moment a collector is actually seen in THIS browser.
+function collectAutoPin() {
+  if (!collectRead() && window.extState && extState.version) {
+    collectWrite('on');
+    collectPaint();
+  }
+}
+
+function collectSet(v) {
+  const on = (v === 'on');
+  collectWrite(on ? 'on' : 'off');
+  collectPaint();
+  if (on) {
+    if (!extState.tested && !extState.testing) extRunSelfTest();
+    else { checkExtVersion(extState.version || extState.lastSeenVersion, !extState.version); extPaint(); }
+  } else {
+    const banner = document.getElementById('ext-version-banner');
+    if (banner) { banner.style.display = 'none'; if (window.pulseStackBanners) pulseStackBanners(); }
+    extPaint();
+  }
+}
+
+function collectPaint() {
+  const on = isCollecting();
+  const rOn = document.getElementById('collect-on');
+  const rOff = document.getElementById('collect-off');
+  if (rOn) rOn.checked = on;
+  if (rOff) rOff.checked = !on;
+  const oOn = document.getElementById('collect-opt-on');
+  const oOff = document.getElementById('collect-opt-off');
+  if (oOn) oOn.classList.toggle('checked', on);
+  if (oOff) oOff.classList.toggle('checked', !on);
+  const state = document.getElementById('collect-state');
+  if (state) {
+    state.textContent = on ? 'Collecting' : 'Viewing only';
+    state.className = 'diag-badge ' + (on ? 'ok' : 'pending');
+  }
+  const hint = document.getElementById('collect-hint');
+  if (hint) {
+    hint.innerHTML = on
+      ? 'Pulse expects the collector extension in this browser and will tell you if it goes missing, falls behind or loses its token.'
+      : 'The Chrome extension is <b>not</b> required on this computer and Pulse will not ask for it. Nothing about collection on your other machines changes.';
+  }
+}
+window.collectSet = collectSet;
+window.collectPaint = collectPaint;
+
+function gotoSettings() {
+  const item = document.querySelector('.nav-item[data-page="settings"]');
+  if (item) item.click();
+}
+window.gotoSettings = gotoSettings;
+
 // Shared state for the Extension page. Declared here (above checkExtVersion) so an
 // announcement that lands before the page module boots is never dropped.
 window.extState = {
@@ -1512,13 +1638,21 @@ function checkExtVersion(installed, isFallback) {
     } else {
       extState.version = installed;
       extState.lastSeenVersion = installed;
+      collectAutoPin();   // this browser has a collector — remember it is one
     }
     if (window.extPaint) extPaint();
   }
   const banner = document.getElementById('ext-version-banner');
   const msg = document.getElementById('ext-version-msg');
   const link = document.getElementById('ext-version-link');
-  if (!banner || !installed) return;
+  if (!banner) return;
+  // Viewing-only computer: never nag about the extension here.
+  if (!isCollecting()) {
+    banner.style.display = 'none';
+    if (window.pulseStackBanners) window.pulseStackBanners();
+    return;
+  }
+  if (!installed) return;
   if (link) link.setAttribute('download', 'Pulse-LinkedIn-Extension-v' + LATEST_EXT_VERSION + '.zip');
   if (cmpVer(installed, LATEST_EXT_VERSION) < 0) {
     msg.textContent = '⚠ Your Pulse extension is v' + installed + ' — the latest is v' + LATEST_EXT_VERSION + '. Update it for the newest features and fixes'
@@ -1604,7 +1738,28 @@ async function extRunSelfTest() {
 
   // 1. Is the extension there at all, and can it hear us?
   extState.version = extAnnouncedVersion();
+  if (extState.version) collectAutoPin();
   extState.bridge = false;
+
+  // Viewing-only computer: there is nothing to talk to and no token to hand
+  // over, so skip straight to the two facts that still matter here.
+  if (!isCollecting()) {
+    try {
+      const r = await fetch(API_BASE + '/api/health', { cache: 'no-store' });
+      extState.apiOk = r.ok;
+    } catch (e) { extState.apiOk = false; }
+    try {
+      const s = await fetch(API_BASE + '/api/scans', { cache: 'no-store' }).then(r => r.json());
+      const scans = (s && s.scans) || [];
+      extState.lastSync = scans.length ? scans[0] : null;
+    } catch (e) { extState.lastSync = null; }
+    extState.testing = false;
+    extState.tested = true;
+    if (btn) { btn.disabled = false; btn.textContent = 'Run checks'; }
+    extPaint();
+    return;
+  }
+
   try {
     const pong = await extAsk('ping', null, 2500);
     extState.bridge = true;
@@ -1660,6 +1815,7 @@ async function extRunSelfTest() {
 // extension over the bridge. Runs on every load, but no-ops the moment the
 // collector already holds a token, so it costs one bridge round-trip.
 async function extAutoConnect() {
+  if (!isCollecting()) return;                  // viewing-only computer: no token here
   if (!extState.bridge) return;                 // nothing to hand it to
   if (extState.hasToken !== false) return;      // already connected, or unknown
   if (extState.autoConnecting) return;
@@ -1698,11 +1854,29 @@ async function extAutoConnect() {
 
 // ─── Rendering ───
 function extPaint() {
+  extPaintVisibility();
   extPaintHero();
   extPaintChecks();
   extPaintSyncControls();
   extPaintNavBadge();
   extPaintDownload();
+}
+
+// On a viewing-only computer the token, sync, install and troubleshooting
+// cards are all noise (and the token card would put a write credential on a
+// machine that never writes), so they come off the page entirely.
+function extPaintVisibility() {
+  const on = isCollecting();
+  ['my-token-card', 'ext-sync-card', 'ext-install-card', 'ext-trouble-card'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = on ? '' : 'none';
+  });
+  const title = document.getElementById('ext-check-title');
+  if (title) title.textContent = on ? 'Installation check' : 'This computer';
+  const sub = document.getElementById('ext-header-sub');
+  if (sub) sub.textContent = on
+    ? 'Install, verify and run the Pulse LinkedIn Collector'
+    : 'This computer is set to viewing only \u2014 no collector needed here';
 }
 
 function extInstalled() { return !!extState.version; }
@@ -1724,7 +1898,14 @@ function extPaintHero() {
 
   let cls = 'pending', icon = '⏳', head = 'Checking for the extension…', text = 'Looking for the Pulse collector in this browser.', act = '';
 
-  if (extState.testing) {
+  if (!isCollecting()) {
+    cls = 'ok'; icon = '\u{1F441}';
+    head = 'Viewing only on this computer';
+    text = 'Collecting Session is off here, so the Pulse collector is not needed and nothing is missing. '
+      + (extInstalled() ? 'One is installed anyway (v' + esc(extState.version) + ') &mdash; it simply is not required. ' : '')
+      + 'Conversations keep arriving from whichever computer is set to collecting.';
+    act = '<button class="ext-btn secondary" onclick="gotoSettings()">Settings &rarr; This computer</button>';
+  } else if (extState.testing) {
     // keep the checking state
   } else if (!extInstalled()) {
     cls = 'error'; icon = '✕';
@@ -1785,6 +1966,26 @@ function extPaintChecks() {
   }
 
   const rows = [];
+
+  // Viewing-only computer: report the two things that still matter here and
+  // nothing that reads as a fault.
+  if (!isCollecting()) {
+    rows.push(extRow('\u{1F441}', 'ok', 'Collecting Session',
+      'Off on this computer &mdash; the Chrome extension is not required here', 'Viewer'));
+    rows.push(extState.apiOk
+      ? extRow('\u{1F4E1}', 'ok', 'Pulse API', esc(API_BASE) + ' is responding', 'Online')
+      : extRow('\u{1F4E1}', 'error', 'Pulse API', 'Could not reach ' + esc(API_BASE) + ' from this browser', 'Offline'));
+    if (extState.lastSync && extState.lastSync.timestamp) {
+      const h = Math.round((Date.now() - new Date(extState.lastSync.timestamp).getTime()) / 3600000);
+      const a = h < 1 ? 'less than an hour ago' : h < 24 ? h + ' hours ago' : Math.round(h / 24) + ' days ago';
+      rows.push(extRow('\u{1F551}', 'ok', 'Last sync',
+        (extState.lastSync.count || 0) + ' conversations collected ' + a + ' on the collecting computer', 'Recent'));
+    } else {
+      rows.push(extRow('\u{1F551}', 'pending', 'Last sync', 'No sync recorded on this account yet', 'None'));
+    }
+    host.innerHTML = rows.join('');
+    return;
+  }
 
   // Installed?
   rows.push(extInstalled()
@@ -1847,6 +2048,13 @@ function extPaintSyncControls() {
   const hint = document.getElementById('ext-sync-hint');
   if (!btn || !hint) return;
 
+  if (!isCollecting()) {
+    btn.disabled = true;
+    btn.innerHTML = '\u26A1 Sync now';
+    hint.textContent = 'This computer is set to viewing only. Turn Collecting Session on in Settings to sync from here.';
+    return;
+  }
+
   if (extState.syncing) {
     btn.disabled = true;
     btn.innerHTML = '⏳ Syncing…';
@@ -1871,7 +2079,8 @@ function extPaintSyncControls() {
 function extPaintNavBadge() {
   const badge = document.getElementById('nav-badge-ext');
   if (!badge) return;
-  const needsAttention = extState.tested && (!extInstalled() || extOutdated() || extState.hasToken === false);
+  const needsAttention = isCollecting() && extState.tested
+    && (!extInstalled() || extOutdated() || extState.hasToken === false);
   badge.style.display = needsAttention ? '' : 'none';
 }
 
@@ -2515,6 +2724,7 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
     if (page === 'extension') initExtensionPage();
     if (page === 'settings') {
       document.getElementById('settings-api-url').value = API_BASE;
+      collectPaint();
     }
   });
 });
@@ -4040,6 +4250,8 @@ function filterByCampaign(name) {
 }
 
 // ─── INIT ───
+collectPaint();
+extPaintVisibility();
 loadAllData();
 setInterval(loadAllData, 30000);
 
