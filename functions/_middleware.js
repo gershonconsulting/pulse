@@ -42,6 +42,7 @@ const PUBLIC_PATHS = new Set([
   '/api/me',            // returns 401 by design when signed out — the homepage/app both poll it
   '/api/health',        // liveness only, exposes no data
   '/api/health-check',  // watchdog endpoint — carries its own HEALTH_CHECK_SECRET
+  '/api/daily-report',  // digest endpoint — carries its own DAILY_REPORT_SECRET
   '/favicon.ico',
   '/favicon.svg',
   '/robots.txt',
