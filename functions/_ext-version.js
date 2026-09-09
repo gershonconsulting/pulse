@@ -13,10 +13,11 @@
 // drift, set the `LATEST_EXT_VERSION` env var in Cloudflare Pages — it wins over the
 // constant, so a drift can be corrected without a redeploy.
 
-// 1.18.0 = the auto-connect build, and what app/app.html declares. The unpacked
-// folder on disk and the copy committed under linkedin-pulse-extension/ are BOTH
-// older than the shipped app/pulse-extension.zip — do not take either as the truth.
-export const LATEST_EXT_VERSION = '1.18.0';
+// 1.19.0 = the build that honours Collecting Session (a collector on a computer set
+// to viewing only stands down instead of syncing), and what app/app.html declares.
+// The copy committed under linkedin-pulse-extension/ is older than the shipped
+// app/pulse-extension.zip — do not take it as the truth.
+export const LATEST_EXT_VERSION = '1.19.0';
 
 export function latestExtVersion(env) {
   const override = ((env && env.LATEST_EXT_VERSION) || '').trim();
