@@ -709,7 +709,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.8.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.9.0</div>
   </div>
 </aside>
 
@@ -1275,7 +1275,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.8.0" readonly>
+            <input type="text" value="v5.9.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -1515,12 +1515,15 @@ const API_BASE = window.location.origin;
 // Warn (in red) when the installed Chrome extension is older than the latest.
 // The extension's content script announces its version on this page via a
 // data attribute + event; we fall back to the last synced version otherwise.
-const LATEST_EXT_VERSION = '1.18.0';
+const LATEST_EXT_VERSION = '1.19.0';
 // First extension version that exposes the page bridge (Sync Now from this page).
 const EXT_BRIDGE_MIN_VERSION = '1.17.0';
 // First extension version that will accept a token from this page — i.e. the one
 // that made the old "paste the token from Cloudflare" screen go away.
 const EXT_AUTOCONNECT_MIN_VERSION = '1.18.0';
+// First collector build that HONOURS Collecting Session — below this, turning the
+// setting off quiets the dashboard but the extension still collects.
+const EXT_COLLECTING_MIN_VERSION = '1.19.0';
 window.__extAnnounced = false;
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1562,9 +1565,22 @@ function collectAutoPin() {
   }
 }
 
+// Tell the collector in this browser which way the switch went, so it stands
+// down (or starts up) without waiting for a page reload. Best-effort: an older
+// collector has no such action and simply rejects it, which is not an error the
+// user needs to see — extPaintChecks reports the version gap instead.
+function collectPushToExtension(on) {
+  if (!extState.bridge) return Promise.resolve(false);
+  if (cmpVer(extState.version, EXT_COLLECTING_MIN_VERSION) < 0) return Promise.resolve(false);
+  return extAsk('setCollecting', { collecting: !!on }, 3000)
+    .then(function () { return true; })
+    .catch(function () { return false; });
+}
+
 function collectSet(v) {
   const on = (v === 'on');
   collectWrite(on ? 'on' : 'off');
+  collectPushToExtension(on);
   collectPaint();
   if (on) {
     if (!extState.tested && !extState.testing) extRunSelfTest();
@@ -1781,6 +1797,10 @@ async function extRunSelfTest() {
   // 2b. No token? Give it one. This is what replaces the manual paste.
   if (extState.hasToken === false) await extAutoConnect();
 
+  // Make sure the collector in this browser knows how this computer is set, even
+  // if the user never touches the radio again.
+  collectPushToExtension(isCollecting());
+
   // 3. Is the Pulse API reachable, and when did we last receive data?
   try {
     const r = await fetch(API_BASE + '/api/health', { cache: 'no-store' });
@@ -1867,19 +1887,32 @@ function extPaint() {
 // machine that never writes), so they come off the page entirely.
 function extPaintVisibility() {
   const on = isCollecting();
-  ['my-token-card', 'ext-sync-card', 'ext-install-card', 'ext-trouble-card'].forEach(function (id) {
+  ['my-token-card', 'ext-sync-card', 'ext-trouble-card'].forEach(function (id) {
     const el = document.getElementById(id);
     if (el) el.style.display = on ? '' : 'none';
   });
+  // The install card stays up on a viewer when the collector there is too old to
+  // stand down — that is the one case where a viewer still needs to act.
+  const install = document.getElementById('ext-install-card');
+  if (install) install.style.display = (on || extCollectsDespiteViewer()) ? '' : 'none';
   const title = document.getElementById('ext-check-title');
   if (title) title.textContent = on ? 'Installation check' : 'This computer';
   const sub = document.getElementById('ext-header-sub');
   if (sub) sub.textContent = on
     ? 'Install, verify and run the Pulse LinkedIn Collector'
-    : 'This computer is set to viewing only \u2014 no collector needed here';
+    : extCollectsDespiteViewer()
+      ? 'Viewing only \u2014 update the collector installed here so it stops syncing'
+      : 'This computer is set to viewing only \u2014 no collector needed here';
 }
 
 function extInstalled() { return !!extState.version; }
+
+// A viewer machine with a collector too old to honour the setting: it is still
+// collecting behind our back. That is the one thing worth warning about here.
+function extCollectsDespiteViewer() {
+  return !isCollecting() && extInstalled()
+    && cmpVer(extState.version, EXT_COLLECTING_MIN_VERSION) < 0;
+}
 function extOutdated() { return extInstalled() && cmpVer(extState.version, LATEST_EXT_VERSION) < 0; }
 
 function extPaintDownload() {
@@ -1901,9 +1934,16 @@ function extPaintHero() {
   if (!isCollecting()) {
     cls = 'ok'; icon = '\u{1F441}';
     head = 'Viewing only on this computer';
-    text = 'Collecting Session is off here, so the Pulse collector is not needed and nothing is missing. '
-      + (extInstalled() ? 'One is installed anyway (v' + esc(extState.version) + ') &mdash; it simply is not required. ' : '')
-      + 'Conversations keep arriving from whichever computer is set to collecting.';
+    if (extCollectsDespiteViewer()) {
+      cls = 'warn'; icon = '\u26A0';
+      head = 'Viewing only \u2014 but collector v' + esc(extState.version) + ' is still running';
+      text = 'This computer is set to viewing only, yet the collector installed here is older than v'
+        + EXT_COLLECTING_MIN_VERSION + ', the first build that stands down. Update it below, or remove it from this browser.';
+    } else {
+      text = 'Collecting Session is off here, so the Pulse collector is not needed and nothing is missing. '
+        + (extInstalled() ? 'The collector installed here (v' + esc(extState.version) + ') has stood down. ' : '')
+        + 'Conversations keep arriving from whichever computer is set to collecting.';
+    }
     act = '<button class="ext-btn secondary" onclick="gotoSettings()">Settings &rarr; This computer</button>';
   } else if (extState.testing) {
     // keep the checking state
@@ -1970,8 +2010,13 @@ function extPaintChecks() {
   // Viewing-only computer: report the two things that still matter here and
   // nothing that reads as a fault.
   if (!isCollecting()) {
-    rows.push(extRow('\u{1F441}', 'ok', 'Collecting Session',
-      'Off on this computer &mdash; the Chrome extension is not required here', 'Viewer'));
+    rows.push(extCollectsDespiteViewer()
+      ? extRow('\u{1F441}', 'warn', 'Collecting Session',
+          'Off on this computer, but collector v' + esc(extState.version) + ' predates v' + EXT_COLLECTING_MIN_VERSION
+          + ' and keeps syncing &mdash; update it below', 'Still on')
+      : extRow('\u{1F441}', 'ok', 'Collecting Session', extInstalled()
+          ? 'Off on this computer &mdash; the collector installed here (v' + esc(extState.version) + ') has stood down'
+          : 'Off on this computer &mdash; the Chrome extension is not required here', 'Viewer'));
     rows.push(extState.apiOk
       ? extRow('\u{1F4E1}', 'ok', 'Pulse API', esc(API_BASE) + ' is responding', 'Online')
       : extRow('\u{1F4E1}', 'error', 'Pulse API', 'Could not reach ' + esc(API_BASE) + ' from this browser', 'Offline'));
