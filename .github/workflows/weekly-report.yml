@@ -1,0 +1,54 @@
+name: Pulse weekly report
+
+# Monday morning recap of the week just finished (Mon–Sun), fired at 11:12 UTC =
+# 7:12am US Eastern in summer (EDT), 6:12am in winter (EST). GitHub's cron is fixed
+# UTC and does not follow DST.
+#
+# Deliberately 5 minutes after the daily digest (11:07) rather than replacing it:
+# on Mondays both arrive. The daily answers "did yesterday work?", the weekly answers
+# "did the week move?" — and two independent cron jobs mean one broken workflow
+# cannot silence both.
+#
+# Same endpoint and same secret as the daily digest; only period=week differs.
+# Requires repo secret HEALTH_CHECK_SECRET (or DAILY_REPORT_SECRET) matching the
+# value set in Cloudflare Pages → Settings → Variables and Secrets → Production.
+
+on:
+  schedule:
+    - cron: '12 11 * * 1'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Last day of the week to report on (YYYY-MM-DD, local). Blank = yesterday.'
+        required: false
+      dry:
+        description: 'Set to 1 to build the report without emailing it.'
+        required: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly report
+        env:
+          SECRET: ${{ secrets.DAILY_REPORT_SECRET || secrets.HEALTH_CHECK_SECRET }}
+          DATE: ${{ github.event.inputs.date }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: |
+          if [ -z "$SECRET" ]; then
+            echo "::error::Neither DAILY_REPORT_SECRET nor HEALTH_CHECK_SECRET is set in repo secrets."
+            exit 1
+          fi
+          payload=$(jq -nc --arg s "$SECRET" --arg d "$DATE" --arg dry "$DRY" \
+            '{secret:$s, period:"week"} + (if $d == "" then {} else {date:$d} end) + (if $dry == "" then {} else {dry:$dry} end)')
+          code=$(curl -sS -o response.json -w '%{http_code}' \
+            -X POST 'https://pulse.gershoncrm.com/api/daily-report' \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          echo "HTTP $code"
+          # Never echo the payload — it carries the secret. The response does not.
+          cat response.json | jq . || cat response.json
+          if [ "$code" != "200" ]; then
+            echo "::error::Weekly report failed with HTTP $code"
+            exit 1
+          fi
