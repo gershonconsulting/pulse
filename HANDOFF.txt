@@ -1,0 +1,110 @@
+================================================================
+HANDOFF.txt  -  pulse
+Written by: Claude (Anthropic) - token-limit handoff protocol
+Date: 2026-09-09
+================================================================
+
+0. WHO YOU ARE READING THIS
+----------------------------------------------------------------
+You are an AI assistant taking over work on this repository for
+Olivier Attia, founder / CTO of Gershon Consulting LLC.
+
+Read the MASTER HANDOFF first:
+  github.com/gershonconsulting/memory -> HANDOFF.txt
+It carries the full operating rules, technical defaults and the
+index of all 33 repos.
+
+CRITICAL OPERATING RULES - do not break these:
+  * Olivier does NOT use a terminal, CLI, git or PowerShell. NEVER
+    give him commands, scripts, .bat files or 'just run this' steps.
+  * He does NOT upload, download, move or save files, and does not
+    click buttons an AI injected. If a file has to get somewhere,
+    YOU find the route and execute it.
+  * End every actionable reply with:
+      GREEN CHECK = ready for him to test (+ the link)
+      RED CROSS   = something still to do (+ exactly 3 options he
+                    can actually action - never a CLI step)
+  * Executors: Ariel = code and repo work. Charles = Chrome
+    extension and web admin panels (Cloudflare, GitHub settings,
+    DNS, publishing).
+
+1. WHAT THIS REPO IS
+----------------------------------------------------------------
+Product   : GershonPulse
+Live URL  : pulse.gershoncrm.com/app
+Does      : LinkedIn outreach intelligence dashboard - hybrid of live LinkedIn OAuth data plus manual Sales Navigator entry, fed by a Chrome collector extension
+Users     : Gershon Consulting internally, plus per-tenant client accounts (each client mailed at their own registered address)
+
+2. STACK AND DEPLOY ROUTE
+----------------------------------------------------------------
+Front end     : static app/ (HTML/JS)
+Back end      : Cloudflare Pages Functions (functions/) + KV storage
+Config        : wrangler.jsonc, package.json
+Collector     : linkedin-pulse-extension/ - Chrome extension, current
+                server-side 'latest' version 1.19.0
+Default branch: main
+Deploy        : see DEPLOY-INSTRUCTIONS.md at repo root. Push to main;
+                GitHub Actions in .github/ handles it.
+Auth          : LinkedIn OAuth, Client ID 7872oam6u16qs7
+Secrets       : 1Password. Never commit them.
+
+3. RECENTLY DONE  [DONE]
+----------------------------------------------------------------
+- v5.9.1 (2026-09-09) fix: the viewer 'Last sync' field read an endpoint
+  that does not exist and therefore always displayed 'None'.
+- Server-side latest collector version bumped to 1.19.0.
+- v5.9.0 + collector v1.19.0: the collector now stands down on
+  viewing-only computers.
+- Per-tenant digest: each client is mailed at their registered address
+  rather than everything going to one inbox.
+- /api/daily-report opened up, server-side extension version exposed.
+- v5.8.0: 'Collecting session ON/OFF' per computer (see section 8).
+- v5.7.0: clickable dashboard blocks, filter rail, interactive charts.
+
+4. PENDING  [TODO]
+----------------------------------------------------------------
+- LinkedIn 'Sign In with OpenID Connect' access is STILL PENDING on the
+  LinkedIn Developer portal. Until it is granted, the live-OAuth half of
+  the hybrid model is limited. This is an external approval - it cannot
+  be coded around. Check the portal before assuming an auth bug.
+
+5. MISSING / NOT BUILT YET
+----------------------------------------------------------------
+- Nothing recorded as missing at handoff time. Confirm with Olivier
+  before starting new scope.
+
+6. KNOWN BUGS / NEEDS FIXING
+----------------------------------------------------------------
+- No open bug recorded. The last two commits were both bug fixes, so
+  verify the viewer 'Last sync' field genuinely shows a real timestamp
+  on a viewing-only computer before closing that thread.
+
+7. NEXT ACTION - START HERE
+----------------------------------------------------------------
+  -> Verify v5.9.1 live at pulse.gershoncrm.com/app: on a viewer
+     computer, 'Last sync' must show a real timestamp, not 'None'.
+     Then chase the LinkedIn OpenID Connect approval.
+
+8. GOTCHAS / HARD-WON LESSONS
+----------------------------------------------------------------
+- COLLECTING SESSION is PER COMPUTER, never per account. Storage is
+  localStorage; Pulse's repo constant is `pulse_collecting` and the UI
+  uses `collect-mode` radios in the settings view. An account-level flag
+  would follow the login to every machine, so one viewer switching off
+  would silence the machine that actually collects. Default is ON.
+- OFF never claims an extension IS installed - it only stops requiring
+  one. A viewer still shows a small 'Viewing only' indicator.
+- Staleness is NOT hidden on a viewer. A stale capture or no collection
+  in 48h is real account state: it still shows, reworded to point at the
+  collecting computer.
+- Before building anything extension-status related, grep the repo for
+  `_collecting` and 'viewing only' - it is probably already there.
+
+9. CONTACT / ESCALATION
+----------------------------------------------------------------
+Olivier Attia - oattia@gmail.com
+Report mailbox - report@gershonconsulting.com
+
+================================================================
+END OF HANDOFF
+================================================================
