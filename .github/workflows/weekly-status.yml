@@ -1,0 +1,58 @@
+name: Pulse weekly status (internal)
+
+# The INTERNAL all-accounts weekly report → report@gershonconsulting.com.
+# Monday 11:22 UTC = 7:22am US Eastern in summer (EDT), 6:22am in winter (EST).
+# GitHub's cron is fixed UTC and does not follow DST.
+#
+# Deliberately 10 minutes after the client weekly digest (11:12) and 15 after the daily
+# (11:07): the client mail goes out first, so by the time this internal summary lands
+# every client already has their own copy — and a failure here can never delay theirs.
+#
+# Separate workflow on purpose. One broken job must not silence the others.
+#
+# Requires repo secret DAILY_REPORT_SECRET (or HEALTH_CHECK_SECRET) matching the value
+# set in Cloudflare Pages → Settings → Variables and Secrets → Production.
+
+on:
+  schedule:
+    - cron: '22 11 * * 1'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Last day of the week to report on (YYYY-MM-DD, local). Blank = yesterday.'
+        required: false
+      dry:
+        description: 'Set to 1 to build the report without emailing it.'
+        required: false
+      to:
+        description: 'Override recipient (testing). Blank = report@gershonconsulting.com.'
+        required: false
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly status report
+        env:
+          SECRET: ${{ secrets.DAILY_REPORT_SECRET || secrets.HEALTH_CHECK_SECRET }}
+          DATE: ${{ github.event.inputs.date }}
+          DRY: ${{ github.event.inputs.dry }}
+          TO: ${{ github.event.inputs.to }}
+        run: |
+          if [ -z "$SECRET" ]; then
+            echo "::error::Neither DAILY_REPORT_SECRET nor HEALTH_CHECK_SECRET is set in repo secrets."
+            exit 1
+          fi
+          payload=$(jq -nc --arg s "$SECRET" --arg d "$DATE" --arg dry "$DRY" --arg to "$TO" \
+            '{secret:$s} + (if $d == "" then {} else {date:$d} end) + (if $dry == "" then {} else {dry:$dry} end) + (if $to == "" then {} else {to:$to} end)')
+          code=$(curl -sS -o response.json -w '%{http_code}' \
+            -X POST 'https://pulse.gershoncrm.com/api/weekly-status' \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          echo "HTTP $code"
+          # Never echo the payload — it carries the secret. The response does not.
+          cat response.json | jq . || cat response.json
+          if [ "$code" != "200" ]; then
+            echo "::error::Weekly status report failed with HTTP $code"
+            exit 1
+          fi
