@@ -1,0 +1,45 @@
+  /* ─── SUGGESTED REPLIES (v5.10.0) ─── */
+  .msg-link-chip--suggest { color: #7c3aed; border-color: #7c3aed; background: #faf5ff; cursor: pointer; font-family: inherit; line-height: 1.5; }
+  .msg-link-chip--suggest.on { background: #7c3aed; color: #fff; }
+  .msg-link-chip--suggest.hot { box-shadow: 0 0 0 2px #ede9fe; }
+  .sugg-panel { margin-top: 12px; border: 1px solid #e9d5ff; background: #fcfaff; border-radius: 10px; padding: 12px 14px; }
+  .sugg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .sugg-head b { color: var(--text); }
+  .sugg-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #ede9fe; color: #5b21b6; }
+  .sugg-pill.grey { background: #f1f5f9; color: #475569; }
+  .sugg-head .sugg-sp { flex: 1; }
+  .sugg-link { background: none; border: none; color: #7c3aed; font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 4px; font-family: inherit; }
+  .sugg-link:hover { text-decoration: underline; }
+  .sugg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .sugg-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sugg-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); }
+  .sugg-basis { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; }
+  .sugg-basis.ai { background: #ede9fe; color: #5b21b6; }
+  .sugg-basis.template { background: #e0f2fe; color: #075985; }
+  .sugg-basis.past { background: #dcfce7; color: #166534; }
+  .sugg-text { width: 100%; min-height: 160px; resize: vertical; font-size: 13px; line-height: 1.5; font-family: inherit; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: #fff; }
+  .sugg-text:focus { outline: 2px solid #c4b5fd; border-color: #a78bfa; }
+  .sugg-actions { display: flex; gap: 6px; align-items: center; }
+  .sugg-copy { flex: 1; background: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .sugg-copy:hover { background: #6d28d9; }
+  .sugg-copy.done { background: var(--green); }
+  .sugg-open { font-size: 12px; font-weight: 600; color: #0a66c2; text-decoration: none; padding: 7px 8px; border: 1px solid #0a66c2; border-radius: 6px; white-space: nowrap; }
+  .sugg-note { font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .sugg-loading { font-size: 13px; color: var(--muted); padding: 6px 0; }
+  .kb-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .kb-grid .settings-form-group { border-right: 1px solid var(--border); }
+  .kb-grid .settings-form-group:nth-child(2n) { border-right: none; }
+  .kb-field { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text); background: #fff; }
+  textarea.kb-field { min-height: 72px; resize: vertical; line-height: 1.45; }
+  .kb-grid .kb-full { grid-column: 1 / -1; border-right: none; }
+  .lib-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 24px; border-bottom: 1px solid var(--border); }
+  .lib-row:last-child { border-bottom: none; }
+  .lib-text { font-size: 13px; white-space: pre-wrap; color: var(--text); }
+  .lib-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--muted); align-items: center; }
+  .lib-ctx { font-style: italic; }
+  .lib-btn { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .lib-btn:hover { background: var(--bg); }
+  .lib-btn.danger { color: var(--red); }
+  .lib-tabs { display: flex; gap: 6px; }
+  .lib-empty { padding: 20px 24px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 800px) { .kb-grid { grid-template-columns: 1fr; } .kb-grid .settings-form-group { border-right: none; } }

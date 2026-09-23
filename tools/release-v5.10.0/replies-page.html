@@ -1,0 +1,58 @@
+  <!-- ════════ REPLIES (v5.10.0) — company knowledge + reply library ════════ -->
+  <div class="page-view" id="page-replies">
+    <div class="page-header">
+      <div>
+        <h2>Replies</h2>
+        <div class="header-sub">What Suggested replies knows &mdash; your company and your past replies</div>
+      </div>
+      <div class="header-actions">
+        <button class="refresh-btn" onclick="renderReplies()">Refresh</button>
+      </div>
+    </div>
+    <div class="container">
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Company knowledge</h3>
+          <span class="diag-badge pending" id="kb-state">&mdash;</span>
+        </div>
+        <div class="settings-section-body">
+          <div class="kb-grid">
+            <div class="settings-form-group"><label for="kb-company">Company</label><input class="kb-field" id="kb-company" maxlength="300"></div>
+            <div class="settings-form-group"><label for="kb-sender">Signed by (first name)</label><input class="kb-field" id="kb-sender" maxlength="300"></div>
+            <div class="settings-form-group"><label for="kb-pitch">What you do &mdash; English (1&ndash;2 sentences)</label><textarea class="kb-field" id="kb-pitch" maxlength="1200"></textarea></div>
+            <div class="settings-form-group"><label for="kb-pitchFr">What you do &mdash; French</label><textarea class="kb-field" id="kb-pitchFr" maxlength="1200"></textarea></div>
+            <div class="settings-form-group"><label for="kb-proof">Credibility &mdash; English</label><textarea class="kb-field" id="kb-proof" maxlength="800"></textarea></div>
+            <div class="settings-form-group"><label for="kb-proofFr">Credibility &mdash; French</label><textarea class="kb-field" id="kb-proofFr" maxlength="800"></textarea></div>
+            <div class="settings-form-group"><label for="kb-market">Market &mdash; English</label><input class="kb-field" id="kb-market" maxlength="300" placeholder="the US market"></div>
+            <div class="settings-form-group"><label for="kb-marketFr">Market &mdash; French</label><input class="kb-field" id="kb-marketFr" maxlength="300" placeholder="le march&eacute; am&eacute;ricain"></div>
+            <div class="settings-form-group"><label for="kb-cta">Preferred next step</label><input class="kb-field" id="kb-cta" maxlength="300" placeholder="a short 15-minute call"></div>
+            <div class="settings-form-group"><label for="kb-calendarLink">Booking link (optional)</label><input class="kb-field" id="kb-calendarLink" maxlength="300" placeholder="https://calendly.com/..."></div>
+            <div class="settings-form-group kb-full"><label for="kb-tone">Tone</label><input class="kb-field" id="kb-tone" maxlength="400"></div>
+            <div class="settings-form-group kb-full"><label for="kb-notes">Anything else replies should know (offers, FAQs, what never to say)</label><textarea class="kb-field" id="kb-notes" maxlength="4000" style="min-height:96px"></textarea>
+              <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="run-diag-btn" id="kb-save" onclick="kbSave()">Save knowledge</button><span class="hint" id="kb-hint"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Past replies</h3>
+          <div class="lib-tabs">
+            <button type="button" class="seg-btn active" data-lib="library" onclick="libTab('library')">Library <span id="lib-count-library"></span></button>
+            <button type="button" class="seg-btn" data-lib="sent" onclick="libTab('sent')">Sent on LinkedIn <span id="lib-count-sent"></span></button>
+          </div>
+        </div>
+        <div class="settings-section-body">
+          <div class="settings-form-group">
+            <label for="lib-new">Add a reply you like</label>
+            <textarea class="kb-field" id="lib-new" placeholder="Paste a reply that worked well. Suggested replies will reuse its wording and tone."></textarea>
+            <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="run-diag-btn" onclick="libAdd()">Add to library</button><span class="hint">Every suggestion you copy is added here automatically, so the library grows as you work.</span></div>
+          </div>
+          <div id="lib-list"><div class="lib-empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
