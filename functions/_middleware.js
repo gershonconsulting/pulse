@@ -44,6 +44,7 @@ const PUBLIC_PATHS = new Set([
   '/api/health-check',  // watchdog endpoint — carries its own HEALTH_CHECK_SECRET
   '/api/daily-report',  // digest endpoint — carries its own DAILY_REPORT_SECRET
   '/api/weekly-status', // internal all-accounts weekly report — same secret, same reason
+  '/api/monthly-report', // monthly client + all-clients report — same secret, same reason
   '/favicon.ico',
   '/favicon.svg',
   '/robots.txt',
