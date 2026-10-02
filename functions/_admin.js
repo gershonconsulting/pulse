@@ -503,10 +503,12 @@ export async function enrollUser(env, profile) {
   const client = {
     id: newClientId(label, store),
     name: label,
-    status: 'trial',
-    plan: 'trial',
+    // Trial offer REMOVED until further notice (Olivier, 2026-10-02): new signups are
+    // provisioned as full active clients with no expiry clock.
+    status: 'active',
+    plan: 'client',
     createdAt: now.toISOString(),
-    trialEndsAt: new Date(now.getTime() + TRIAL_DAYS * DAY_MS).toISOString(),
+    trialEndsAt: null,
     notes: '',
     // Their own reports go to them, not to the Gershon reporting address.
     reportEmail: email,
@@ -515,7 +517,7 @@ export async function enrollUser(env, profile) {
     users: [{ email, role: 'owner', addedAt: now.toISOString(), lastSeenAt: now.toISOString() }],
   };
   store.clients.push(client);
-  audit(store, email, 'client.self-enroll', client.id, { trialDays: TRIAL_DAYS, trialEndsAt: client.trialEndsAt });
+  audit(store, email, 'client.self-enroll', client.id, { trial: false });
   await writeAdminStore(env, store);
   return normalizeClient(client);
 }
