@@ -4,6 +4,7 @@
 // DELETE /api/messages — clear all data
 
 import { json, readData, writeData, clientIdOf } from './_shared.js';
+import { recordDailySnapshot } from '../_daily-snapshot.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -154,6 +155,10 @@ export async function onRequestPost(context) {
     };
 
     await writeData(env.PULSE_KV, clientId, data);
+
+    // v5.11.0 — fold this sync into the tenant's daily snapshot for the monthly report.
+    // Best-effort by design: a snapshot failure must never fail the sync itself.
+    try { await recordDailySnapshot(env.PULSE_KV, clientId, scan, data, env.REPORT_TZ); } catch (e) { /* ignore */ }
 
     return json({
       success: true,
