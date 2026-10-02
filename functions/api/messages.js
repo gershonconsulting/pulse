@@ -5,12 +5,15 @@
 
 import { json, readData, writeData, clientIdOf } from './_shared.js';
 import { recordDailySnapshot } from '../_daily-snapshot.js';
+import { applySocialRule } from '../_social-rules.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const clientId = clientIdOf(context);
   try {
     const data = await readData(env.PULSE_KV, clientId);
+    // 2026-10-02 — birthday/anniversary wishes never count as follow-up (read-time view).
+    data.messages = data.messages.map(applySocialRule);
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
@@ -64,7 +67,9 @@ export async function onRequestPost(context) {
   const clientId = clientIdOf(context);
   try {
     const body = await request.json();
-    const { conversations, scanMeta } = body;
+    const { scanMeta } = body;
+    // 2026-10-02 — reclassify birthday/anniversary wishes before anything is counted.
+    const conversations = Array.isArray(body.conversations) ? body.conversations.map(applySocialRule) : body.conversations;
 
     if (!conversations || !Array.isArray(conversations)) {
       return json({ error: 'Missing conversations array' }, 400);
@@ -138,7 +143,9 @@ export async function onRequestPost(context) {
       }
       existingByName.set(conv.name, merged);
     }
-    data.messages = Array.from(existingByName.values());
+    // 2026-10-02 — also fix records stored before this rule existed (e.g. last week's
+    // birthday wishes). applySocialRule leaves manual overrides untouched.
+    data.messages = Array.from(existingByName.values()).map(applySocialRule);
 
     // Compute transition summary for the scan record
     const transitionSummary = {};
