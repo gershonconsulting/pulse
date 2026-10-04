@@ -6,6 +6,9 @@
 // Colour code after this rule:
 //   Orange = the lead said no OR not now ("no thanks", "not for us", "maybe later",
 //            "next quarter"...). Interest Low; Fit Low if it was blank. No reply needed.
+//            Also Orange: someone pitching THEIR product/service to us (vendor, agency,
+//            outsourcing, "book a demo"...) — 2026-10-04, Olivier: "I don't consider Red
+//            people trying to sell us something."
 //   Red    = the lead replied with anything else and it is your turn.
 //   Green  = no reply yet, or you replied last.
 //
@@ -48,6 +51,23 @@ const LATER = new RegExp([
   'je garde (vos|votre)', 'quizás más adelante', 'vielleicht später',
 ].join('|'), 'i');
 
+// Someone selling TO us. High-precision phrases only — the AI tier catches the rest.
+// (Prospects describe their own company too, so generic "we help companies…" is NOT here.)
+const PITCH = new RegExp([
+  'book a (quick |short |free )?(demo|call with (me|us))', 'schedule a (quick |short |free )?demo', 'quick demo',
+  'free (audit|trial|consultation|assessment|strategy (call|session)|pilot)', "i'?d love to (show|walk) you",
+  'we can help you', 'help (you|your (team|company|business)) (grow|scale|increase|generate|get more|boost|automate|save|reduce)',
+  'increase your (sales|revenue|leads|pipeline|conversions)', '(more|qualified) leads for you', 'leads? (to|for) your (business|company)',
+  'companies like yours', 'businesses like yours', 'white[- ]label', 'outsourc', 'offshore', 'nearshore', 'dedicated (developers|devs|team)',
+  'hire (top )?(developers|devs|engineers)', 'seo services', '(web|app|software|mobile) development (services|agency|company)',
+  '\\bour (services|agency|pricing|packages?|offer)\\b', 'limited[- ]time offer', '\\d+ ?% (off|discount)', 'special (offer|discount|pricing)',
+  'pricing (starts|from)', 'i help (founders|ceos|companies|businesses|agencies|consultants|coaches|b2b)',
+  'partnership opportunit', 'would you be interested in (our|a) (service|solution|platform|tool)',
+  // French
+  'audit gratuit', 'd[ée]mo gratuite', 'nos (services|offres|prestations|tarifs)', 'externalis', 'prestataire',
+  'd[ée]veloppeurs? d[ée]di[ée]s', 'des (entreprises|soci[ée]t[ée]s) comme la v[ôo]tre', 'je vous propose (nos|notre|un audit|une d[ée]mo)',
+].join('|'), 'i');
+
 // A refusal phrase next to a real ask is NOT a refusal ("No thanks for the deck — can we talk Tuesday?").
 const ASK = /\?|would love|happy to (chat|talk|connect|meet)|interested in (learning|hearing|knowing)|send (me|us)|let'?s (talk|chat|meet|connect)|call me|book a|schedule|calendly|zoom|teams|appel|rdv|rendez|envoyez|on peut (se )?(parler|appeler)|disponible|available (on|for|next)/i;
 
@@ -62,17 +82,21 @@ function eligible(msg) {
   return true;
 }
 
-// Pure keyword verdict: 'decline' | 'later' | null
+// Pure keyword verdict: 'pitch' | 'decline' | 'later' | null
 export function keywordVerdict(msg) {
   if (!eligible(msg)) return null;
   const t = text(msg);
+  if (PITCH.test(t)) return 'pitch';               // a sales pitch to us is never your turn
   const no = HARD_NO.test(t), later = LATER.test(t);
   if (!no && !later) return null;
   if (ASK.test(t) && !/remove me|unsubscribe|stop (messaging|contacting)|ne plus me contacter/i.test(t)) return null;
   return later ? 'later' : 'decline';
 }
 
-function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+// Bump AI_VER whenever the AI categories change, so old cached verdicts are re-asked.
+const AI_VER = 'v2';
+const AI_VERDICTS = ['decline', 'later', 'pitch'];
+function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return AI_VER + ':' + (h >>> 0).toString(36); }
 
 function toOrange(msg, verdict, source) {
   return {
@@ -81,8 +105,9 @@ function toOrange(msg, verdict, source) {
     ball: 'closed',
     interest: 'Low',
     fit: msg.fit ? msg.fit : 'Low',
-    category: verdict === 'later' ? 'later' : 'decline',
-    reason: (verdict === 'later' ? 'Not now / maybe later' : 'Declined (no thanks / not for us)') + (source === 'ai' ? ' — AI' : ''),
+    category: verdict === 'pitch' ? 'vendor_pitch' : (verdict === 'later' ? 'later' : 'decline'),
+    reason: (verdict === 'pitch' ? 'Selling to us — no reply needed'
+      : verdict === 'later' ? 'Not now / maybe later' : 'Declined (no thanks / not for us)') + (source === 'ai' ? ' — AI' : ''),
   };
 }
 
@@ -91,15 +116,17 @@ export function applyDeclineRule(msg) {
   if (!eligible(msg)) return msg;
   const kw = keywordVerdict(msg);
   if (kw) return toOrange(msg, kw, 'kw');
-  if (msg.aiIntent && msg.aiIntentFor === hash(text(msg)) && (msg.aiIntent === 'decline' || msg.aiIntent === 'later')) {
+  if (msg.aiIntent && msg.aiIntentFor === hash(text(msg)) && AI_VERDICTS.includes(msg.aiIntent)) {
     return toOrange(msg, msg.aiIntent, 'ai');
   }
   return msg;
 }
 
 // ── AI fallback (POST only) ───────────────────────────────────────────────────
-const SYSTEM = 'You classify the LAST message a sales prospect sent in reply to LinkedIn outreach. ' +
-  'Answer with exactly one word: decline (any refusal, however polite: no thanks, not for us, not interested, already have a provider, remove me), ' +
+const SYSTEM = 'You work for Gershon Consulting, which does LinkedIn outreach to companies that want to enter the US market. ' +
+  'You classify the LAST message a LinkedIn contact sent. ' +
+  'Answer with exactly one word: pitch (the contact is trying to sell US their own product or service: an agency, software, outsourcing, developers, lead generation, a demo, an audit, a partnership offer — not a prospect describing their own business in answer to our outreach), ' +
+  'decline (any refusal, however polite: no thanks, not for us, not interested, already have a provider, remove me), ' +
   'later (not now, maybe later, contact me next quarter/year, timing not right), ' +
   'or other (anything else: interest, a question, a meeting request, a referral, out-of-office, thanks, small talk). ' +
   'If the message both refuses and asks for something concrete, answer other.';
@@ -115,7 +142,7 @@ async function classifyAI(t, env, fetchFn) {
       const res = await fetchFn('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: 5, system: SYSTEM, messages: [{ role: 'user', content: user }] }),
+        body: JSON.stringify({ model, max_tokens: 4, system: SYSTEM, messages: [{ role: 'user', content: user }] }),
       });
       if (!res.ok) { if (res.status === 400 || res.status === 404) continue; return null; }
       const j = await res.json();
@@ -138,6 +165,7 @@ async function classifyAI(t, env, fetchFn) {
     return null;
   }
   const w = String(out).toLowerCase();
+  if (/\bpitch/.test(w)) return 'pitch';
   if (/\bdecline/.test(w)) return 'decline';
   if (/\blater/.test(w)) return 'later';
   if (/\bother/.test(w)) return 'other';
