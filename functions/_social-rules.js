@@ -22,6 +22,11 @@ const PLEASANTRY = new RegExp([
   'yom\\s+hul[ae]det', 'с\\s+днём\\s+рождения', 'с\\s+днем\\s+рождения',
   'happy\\s+work\\s+anniversary', 'congrat\\w*\\s+on\\s+your\\s+work\\s+anniversary',
   'joyeux\\s+anniversaire\\s+professionnel', '🎂',
+  // 2026-10-04 — "Congrats on your 5 year anniversary at X!" and new-role congrats slipped through.
+  'congrat\\w*\\s+on\\s+(your\\s+)?(\\d+\\s*-?\\s*(year|yr)s?\\s+)?(work\\s+)?anniversary',
+  'happy\\s+\\d+\\s*-?\\s*(year|yr)s?\\s+(work\\s+)?anniversary',
+  'congrat\\w*\\s+on\\s+(the|your)\\s+new\\s+(role|position|job)',
+  'f[ée]licitations\\s+pour\\s+(ton|votre)\\s+(nouveau\\s+poste|anniversaire)',
 ].join('|'), 'i');
 
 const BUSINESS = /\b(call|meeting|meet\s+up|rdv|rendez|demo|proposal|propos|quote|devis|pricing|price|tarif|budget|contract|contrat|collab\w*|partner\w*|opportunit\w*|project|projet|discuss\w*|discut\w*|schedule|calendly|zoom|teams|appel|r[ée]union|offre|offer|service|client|lead|introduc\w*|intro)\b/i;
