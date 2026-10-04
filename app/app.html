@@ -759,7 +759,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
-    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.10.0</div>
+    <div class="version"><span class="status-dot ok" id="footer-status-dot"></span> <span id="footer-status-text">Online</span> &middot; v5.12.0</div>
   </div>
 </aside>
 
@@ -1080,7 +1080,7 @@
             <div class="settings-form-group"><label for="kb-market">Market &mdash; English</label><input class="kb-field" id="kb-market" maxlength="300" placeholder="the US market"></div>
             <div class="settings-form-group"><label for="kb-marketFr">Market &mdash; French</label><input class="kb-field" id="kb-marketFr" maxlength="300" placeholder="le march&eacute; am&eacute;ricain"></div>
             <div class="settings-form-group"><label for="kb-cta">Preferred next step</label><input class="kb-field" id="kb-cta" maxlength="300" placeholder="a short 15-minute call"></div>
-            <div class="settings-form-group"><label for="kb-calendarLink">Booking link (optional)</label><input class="kb-field" id="kb-calendarLink" maxlength="300" placeholder="https://calendly.com/..."></div>
+            <div class="settings-form-group"><label for="kb-calendarLink">Calendar link (also in Settings)</label><input class="kb-field" id="kb-calendarLink" maxlength="300" placeholder="https://calendly.com/..."></div>
             <div class="settings-form-group kb-full"><label for="kb-tone">Tone</label><input class="kb-field" id="kb-tone" maxlength="400"></div>
             <div class="settings-form-group kb-full"><label for="kb-notes">Anything else replies should know (offers, FAQs, what never to say)</label><textarea class="kb-field" id="kb-notes" maxlength="4000" style="min-height:96px"></textarea>
               <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="run-diag-btn" id="kb-save" onclick="kbSave()">Save knowledge</button><span class="hint" id="kb-hint"></span></div>
@@ -1315,6 +1315,21 @@
     </div>
     <div class="container">
 
+      <!-- Suggested replies — calendar link (v5.12.0) -->
+      <div class="settings-section" id="cal-settings">
+        <div class="settings-section-header">
+          <h3>Suggested replies</h3>
+        </div>
+        <div class="settings-section-body">
+          <div class="settings-form-group">
+            <label for="set-calendarLink">Your calendar link</label>
+            <input id="set-calendarLink" maxlength="300" placeholder="https://calendly.com/your-name">
+            <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="run-diag-btn" onclick="calSave()">Save calendar link</button><span class="hint" id="cal-hint"></span></div>
+            <div class="hint" style="margin-top:8px">Every suggested reply is one sentence about the conversation, then: <b>&ldquo;Let&rsquo;s discuss this further. My calendar is at &lt;this link&gt;&rdquo;</b>.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- This computer (per-machine, localStorage only — never written to KV) -->
       <div class="settings-section">
         <div class="settings-section-header">
@@ -1384,7 +1399,7 @@
           </div>
           <div class="settings-form-group">
             <label>App Version</label>
-            <input type="text" value="v5.10.0" readonly>
+            <input type="text" value="v5.12.0" readonly>
           </div>
           <div class="settings-form-group">
             <label>Chrome Extension</label>
@@ -4703,5 +4718,38 @@ pollScanStatus();
 setInterval(pollScanStatus, 2500);
 </script>
 
+<script>
+// v5.12.0 — calendar link for Suggested replies, editable in Settings (stored in /api/knowledge).
+(function () {
+  async function calLoad() {
+    try {
+      var r = await fetch(window.location.origin + '/api/knowledge');
+      if (!r.ok) return;
+      var kb = (await r.json()).kb || {};
+      var el = document.getElementById('set-calendarLink');
+      if (el && !el.value) el.value = kb.calendarLink || '';
+    } catch (e) {}
+  }
+  window.calSave = async function () {
+    var el = document.getElementById('set-calendarLink');
+    var hint = document.getElementById('cal-hint');
+    hint.textContent = 'Saving…';
+    try {
+      var r = await fetch(window.location.origin + '/api/knowledge');
+      var kb = r.ok ? ((await r.json()).kb || {}) : {};
+      kb.calendarLink = el.value.trim();
+      var res = await fetch(window.location.origin + '/api/knowledge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kb: kb }) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var saved = (await res.json()).kb || {};
+      el.value = saved.calendarLink || '';
+      var other = document.getElementById('kb-calendarLink');
+      if (other) other.value = el.value;
+      if (typeof suggState !== 'undefined') suggState = {};
+      hint.textContent = 'Saved. New suggested replies will use it.';
+    } catch (e) { hint.textContent = 'Could not save: ' + e.message; }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', calLoad); else calLoad();
+})();
+</script>
 </body>
 </html>
