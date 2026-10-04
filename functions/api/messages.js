@@ -6,6 +6,7 @@
 import { json, readData, writeData, clientIdOf } from './_shared.js';
 import { recordDailySnapshot } from '../_daily-snapshot.js';
 import { applySocialRule } from '../_social-rules.js';
+import { applyDeclineRule, applyDeclineRulesAsync } from '../_decline-rules.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -14,6 +15,8 @@ export async function onRequestGet(context) {
     const data = await readData(env.PULSE_KV, clientId);
     // 2026-10-02 — birthday/anniversary wishes never count as follow-up (read-time view).
     data.messages = data.messages.map(applySocialRule);
+    // 2026-10-04 — polite refusals / "maybe later" are Orange, never Red (read-time view).
+    data.messages = data.messages.map(applyDeclineRule);
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
@@ -69,7 +72,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const { scanMeta } = body;
     // 2026-10-02 — reclassify birthday/anniversary wishes before anything is counted.
-    const conversations = Array.isArray(body.conversations) ? body.conversations.map(applySocialRule) : body.conversations;
+    let conversations = Array.isArray(body.conversations) ? body.conversations.map(applySocialRule) : body.conversations;
 
     if (!conversations || !Array.isArray(conversations)) {
       return json({ error: 'Missing conversations array' }, 400);
@@ -77,6 +80,11 @@ export async function onRequestPost(context) {
 
     const data = await readData(env.PULSE_KV, clientId);
     const now = new Date().toISOString();
+
+    // 2026-10-04 — "No thank you" / "not for us" / "maybe later" → Orange (keywords + cached AI fallback).
+    try {
+      conversations = await applyDeclineRulesAsync(conversations, new Map(data.messages.map(m => [m.name, m])), env);
+    } catch (e) { conversations = conversations.map(applyDeclineRule); }
 
     // Record the scan
     const scan = {
@@ -145,7 +153,7 @@ export async function onRequestPost(context) {
     }
     // 2026-10-02 — also fix records stored before this rule existed (e.g. last week's
     // birthday wishes). applySocialRule leaves manual overrides untouched.
-    data.messages = Array.from(existingByName.values()).map(applySocialRule);
+    data.messages = Array.from(existingByName.values()).map(applySocialRule).map(applyDeclineRule);
 
     // Compute transition summary for the scan record
     const transitionSummary = {};
