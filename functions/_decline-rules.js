@@ -14,7 +14,8 @@
 //      are fixed immediately, without an extension update.
 //   2. AI fallback — only for lead replies the keywords did NOT catch, only on POST (sync),
 //      cached on the record (aiIntent + aiIntentFor) so each message is classified once.
-//      Uses env.ANTHROPIC_API_KEY (Claude Haiku/Sonnet), else env.AI (Workers AI), else off.
+//      Uses Cloudflare Workers AI (env.AI binding) — free at our volume. An ANTHROPIC_API_KEY,
+//      if ever set, takes precedence (not configured on purpose: too expensive for this).
 // A manual status override set by the user always wins.
 
 const HARD_NO = new RegExp([
@@ -122,10 +123,17 @@ async function classifyAI(t, env, fetchFn) {
       break;
     }
   } else if (env.AI) {
-    const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-      messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 5,
-    });
-    out = (r && (r.response || r.result)) || '';
+    // Cloudflare Workers AI (binding "AI", added 2026-10-04) — free daily allocation covers our volume.
+    // 70B for accuracy (a classification costs a few neurons); 8B as fallback.
+    for (const model of ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct']) {
+      try {
+        const r = await env.AI.run(model, {
+          messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 5,
+        });
+        out = (r && (r.response || r.result)) || '';
+        if (out) break;
+      } catch (e) { /* try next model */ }
+    }
   } else {
     return null;
   }
