@@ -30,6 +30,7 @@ import {
   readAdminStore, findClient, findClientByToken, findClientByEmail,
   findCohostByEmail, isAdminEmail, VIEW_COOKIE, VIEW_DEFAULT,
 } from './_admin.js';
+import { intelInject } from './_intel-inject.js';
 
 // Paths anyone may reach without a session.
 const PUBLIC_PATHS = new Set([
@@ -84,7 +85,7 @@ function unauthorizedJson() {
   );
 }
 
-export async function onRequest(context) {
+async function gate(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
   const path = normalize(url.pathname);
@@ -211,3 +212,6 @@ export async function onRequest(context) {
   if (path !== '/' && path !== '/index.html') home.searchParams.set('next', path);
   return new Response(null, { status: 302, headers: { Location: home.toString(), 'Cache-Control': 'no-store' } });
 }
+
+// Gate first, then the Intelligence menu injector (v5.13.0).
+export const onRequest = [gate, intelInject];
