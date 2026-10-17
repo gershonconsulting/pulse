@@ -42,6 +42,7 @@ const PUBLIC_PATHS = new Set([
   '/api/logout',        // clearing a cookie needs no cookie
   '/api/me',            // returns 401 by design when signed out — the homepage/app both poll it
   '/api/health',        // liveness only, exposes no data
+  '/api/extension-version', // latest extension version + download link only, exposes no data
   '/api/health-check',  // watchdog endpoint — carries its own HEALTH_CHECK_SECRET
   '/api/daily-report',  // digest endpoint — carries its own DAILY_REPORT_SECRET
   '/api/weekly-status', // internal all-accounts weekly report — same secret, same reason
