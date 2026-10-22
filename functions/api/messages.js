@@ -8,6 +8,14 @@ import { recordDailySnapshot } from '../_daily-snapshot.js';
 import { applySocialRule } from '../_social-rules.js';
 import { applyDeclineRule, applyDeclineRulesAsync } from '../_decline-rules.js';
 
+// v5.15.0 — a link that opens the actual conversation / person (not a name search).
+function isDeepLink(u) {
+  return /\/messaging\/thread\/[^/?#]{6,}|\/sales\/inbox\/[^/?#]{8,}/.test(String(u || ''));
+}
+function isProfileLink(u) {
+  return /\/in\/[^/?#]+|\/sales\/(lead|people)\/AC/.test(String(u || ''));
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
   const clientId = clientIdOf(context);
@@ -148,7 +156,18 @@ export async function onRequestPost(context) {
         // Keep a previously-captured location if this scan didn't find one.
         if (!merged.city && prev.city) merged.city = prev.city;
         if (!merged.country && prev.country) merged.country = prev.country;
+        // v5.15.0 — a scan that failed to capture a link (SN lead card slow to render,
+        // row without an anchor) must not wipe a good link captured earlier.
+        if (!isDeepLink(merged.conversationLink) && isDeepLink(prev.conversationLink)) merged.conversationLink = prev.conversationLink;
+        if (!isProfileLink(merged.profileUrl) && isProfileLink(prev.profileUrl)) merged.profileUrl = prev.profileUrl;
+        if (!merged.snConversationLink && prev.snConversationLink) merged.snConversationLink = prev.snConversationLink;
+        if (!merged.snProfileUrl && prev.snProfileUrl) merged.snProfileUrl = prev.snProfileUrl;
       }
+      // v5.15.0 — records are keyed by name, so a person in BOTH inboxes is one record
+      // and the last inbox scanned used to overwrite the other's links. Keep the Sales
+      // Navigator links in their own fields so "Open in Sales Nav" survives a LinkedIn scan.
+      if (/\/sales\/inbox\/[^/?#]{8,}/.test(conv.conversationLink || '')) merged.snConversationLink = conv.conversationLink;
+      if (/\/sales\/(lead|people)\/AC/.test(conv.profileUrl || '')) merged.snProfileUrl = conv.profileUrl;
       existingByName.set(conv.name, merged);
     }
     // 2026-10-02 — also fix records stored before this rule existed (e.g. last week's

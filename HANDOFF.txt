@@ -1,7 +1,7 @@
 ================================================================
 HANDOFF.txt  -  pulse
 Written by: Claude (Anthropic) - token-limit handoff protocol
-Date: 2026-09-09 (updated 2026-10-22)
+Date: 2026-09-09 (updated 2026-10-22, second nightly PR)
 ================================================================
 
 0. WHO YOU ARE READING THIS
@@ -50,6 +50,41 @@ Secrets       : 1Password. Never commit them.
 
 3. RECENTLY DONE  [DONE]
 ----------------------------------------------------------------
+- 2026-10-22 nightly #2 (branch nightly/2026-10-22-pulse-fixes, v5.15.0)
+  STACKED ON PR #1 (unified design) - merge PR #1 first.
+  Answers Olivier's 2026-10-04 feedback.
+  ✅ "Open in Sales Nav" links fixed (app/pulse-enhance.js, re-binds
+     threadLink / personLink / platformOf). Likely cause (from the code;
+     not checked against live KV data): the collector takes the Sales
+     Navigator thread id from a data attribute that is not always the
+     id, or captures nothing, so the link opened a dead Sales Navigator
+     page (or a LinkedIn messaging search). Now: a /sales/inbox/<id>
+     link only when the id looks like a real thread id; else the
+     captured /sales/lead/ page; else a Sales Navigator people search
+     (https://www.linkedin.com/sales/search/people?query=(keywords:...))
+     for name (+ company when known), labelled "Find in Sales Nav".
+     Sales Nav rows are also recognised from `source`, all open in a new
+     tab. LinkedIn "Open chat" links are unchanged.
+  ✅ Reports page rebuilt (pulse-enhance.js + pulse-enhance.css):
+     30/90-day period switch, 4 KPI tiles with comparison to the
+     previous period (active, new, prospect-replied share, waiting on you
+     now), 6-month stacked Red/Orange/Green chart with tooltips + table
+     view, sources and campaign bars, FIT: High leads with fixed links,
+     loading / empty / load-error states, phone layout. Old Reports only
+     used m.timestamp, which collector rows do not carry, so it was
+     often blank: dates now come from timestamp, else the LinkedIn list
+     date ("Oct 3", "Mon", "3:45 PM" resolved against collectedAt).
+     Undated rows are counted and stated, never guessed.
+  ✅ Settings: "System Diagnostics" and "About" KEPT (Olivier decides on
+     removal) but folded into a collapsed "Advanced" group at the bottom.
+  ✅ functions/_middleware.js: APP_VERSION 5.15.0; themeInject now also
+     adds /pulse-enhance.js (defer) + /pulse-enhance.css to the dashboard
+     (idempotent, switches off once the script is in app.html).
+  ✅ Tested locally: real applyUnifiedTheme() output + Playwright, desktop
+     1366px + phone 390px, sample data / empty / API-down; no JS errors,
+     no horizontal scroll, 64/64 sample links well-formed.
+  ❌ No live preview (Pulse deploys only from main). Preview = private
+     Claude artifact "Pulse Reports Preview" (sample data).
 - 2026-10-22 nightly (branch nightly/2026-10-22-unified-design, v5.14.0)
   Unified Gershon design (decision 2026-10-13: every app looks like
   Linalysis, main colour Gershon.ai red #CC3333; Radar was first).
@@ -86,9 +121,18 @@ Secrets       : 1Password. Never commit them.
 ----------------------------------------------------------------
 - ❌ Unified design PR (nightly/2026-10-22-unified-design) - merge
   pending (Olivier's call).
-- ❌ Fold unified-theme.css into the HTML the next time app.html,
-  index.html or admin.html is edited by hand (the middleware step then
-  switches itself off).
+- ❌ Fixes PR (nightly/2026-10-22-pulse-fixes, v5.15.0) - merge after
+  PR #1 (Olivier's call).
+- ❌ Fold unified-theme.css, pulse-enhance.css and pulse-enhance.js
+  into the HTML the next time app.html, index.html or admin.html is
+  edited by hand (the middleware steps then switch themselves off).
+- ❌ Collector (linkedin-pulse-extension/content.js extractSNConversation):
+  prefer the thread id from the item's href over the
+  data-x-conversation-list-item attribute, and capture the lead URL if
+  the SN list item exposes one. Needs an extension release (zip + version
+  bump); the dashboard already copes without it.
+- ❌ Decision for Olivier: remove Settings > Diagnostics / About
+  entirely, or keep them under Advanced (current).
 - LinkedIn 'Sign In with OpenID Connect' access is STILL PENDING on the
   LinkedIn Developer portal. Until it is granted, the live-OAuth half of
   the hybrid model is limited. This is an external approval - it cannot
@@ -101,12 +145,17 @@ Secrets       : 1Password. Never commit them.
 
 6. KNOWN BUGS / NEEDS FIXING
 ----------------------------------------------------------------
+- Sales Navigator rows: the collector captures no company or lead id,
+  so the fallback search is by name only (may list namesakes).
 - No open bug recorded. The last two commits were both bug fixes, so
   verify the viewer 'Last sync' field genuinely shows a real timestamp
   on a viewing-only computer before closing that thread.
 
 7. NEXT ACTION - START HERE
 ----------------------------------------------------------------
+  -> After PR #1 then the v5.15.0 PR are merged: open Reports and a
+     Sales Navigator row on pulse.gershoncrm.com/app and click
+     "Open in Sales Nav" / "Find in Sales Nav".
   -> Verify v5.9.1 live at pulse.gershoncrm.com/app: on a viewer
      computer, 'Last sync' must show a real timestamp, not 'None'.
      Then chase the LinkedIn OpenID Connect approval.

@@ -1,0 +1,96 @@
+/* =====================================================================
+   v5.15.0 (nightly 2026-10-22) - Reports page + Settings "Advanced"
+   Markup is built by app/pulse-enhance.js. Scoped to #page-reports /
+   #page-settings so the landing page is untouched. Triage colours keep
+   their semantic Red / Orange / Green; volume bars use neutral slate.
+   ===================================================================== */
+#page-reports .pv-toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+#page-reports .pv-toolbar-note{ font-size:12px; color:var(--gx-muted); }
+#page-reports .pv-seg{ display:inline-flex; background:#fff; border:1px solid var(--gx-border); border-radius:999px; padding:3px; }
+#page-reports .pv-seg button{ border:0; background:transparent; color:var(--gx-text); font:inherit; font-size:13px; font-weight:500; padding:6px 14px; border-radius:999px; cursor:pointer; }
+#page-reports .pv-seg button.on{ background:var(--gx-red); color:#fff; font-weight:600; }
+#page-reports .pv-seg button:focus-visible, #page-reports .pv-btn:focus-visible, #page-reports a:focus-visible{ outline:none; box-shadow:var(--gx-ring); }
+
+#page-reports .pv-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+#page-reports .pv-kpi{ background:#fff; border:1px solid var(--gx-border); border-radius:var(--gx-radius); padding:16px 18px; min-width:0; }
+#page-reports .pv-kpi-label{ font-size:12px; font-weight:600; color:var(--gx-muted); text-transform:uppercase; letter-spacing:.04em; }
+#page-reports .pv-kpi-value{ font-size:30px; font-weight:700; color:var(--gx-text); line-height:1.15; margin-top:6px; font-variant-numeric:tabular-nums; }
+#page-reports .pv-kpi-delta{ font-size:12px; font-weight:600; margin-top:6px; }
+#page-reports .pv-kpi-delta.up{ color:#15803d; }
+#page-reports .pv-kpi-delta.up::before{ content:"\25B2  "; font-size:9px; }
+#page-reports .pv-kpi-delta.down{ color:#b91c1c; }
+#page-reports .pv-kpi-delta.down::before{ content:"\25BC  "; font-size:9px; }
+#page-reports .pv-kpi-delta.flat{ color:var(--gx-muted); font-weight:500; }
+#page-reports .pv-kpi-sub{ font-size:12px; color:var(--gx-muted); margin-top:2px; }
+
+#page-reports .pv-card{ background:#fff; border:1px solid var(--gx-border); border-radius:var(--gx-radius); padding:18px 20px; margin-bottom:16px; min-width:0; }
+#page-reports .pv-card-h{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+#page-reports .pv-card-h h3{ font-size:15px; font-weight:700; color:var(--gx-text); margin:0; }
+#page-reports .pv-card-sub{ font-size:12px; color:var(--gx-muted); }
+#page-reports .pv-grid2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:16px; }
+#page-reports .pv-grid2 > .pv-card{ margin-bottom:0; }
+
+#page-reports .pv-legend{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--gx-muted); margin-bottom:6px; }
+#page-reports .pv-legend i{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+#page-reports .pv-chart{ width:100%; height:auto; max-width:100%; display:block; }
+#page-reports .pv-grid{ stroke:var(--gx-border); stroke-width:1; }
+#page-reports .pv-axis{ fill:var(--gx-muted); font-size:11px; }
+#page-reports .pv-val{ fill:var(--gx-text); font-size:11px; font-weight:600; }
+#page-reports .pv-chart rect[data-tv]{ cursor:default; }
+#page-reports .pv-table-wrap{ margin-top:10px; font-size:13px; }
+#page-reports .pv-table-wrap summary{ cursor:pointer; color:var(--gx-red); font-weight:600; font-size:12px; }
+#page-reports .pv-scroll{ overflow-x:auto; margin-top:8px; }
+#page-reports .pv-table{ width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+#page-reports .pv-table th, #page-reports .pv-table td{ text-align:right; padding:6px 10px; border-bottom:1px solid var(--gx-border); white-space:nowrap; }
+#page-reports .pv-table th:first-child, #page-reports .pv-table td:first-child{ text-align:left; }
+#page-reports .pv-table th{ font-size:11px; color:var(--gx-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+#page-reports .pv-note{ font-size:12px; color:var(--gx-muted); margin-top:10px; }
+#page-reports .pv-warn{ background:var(--gx-red-light); border:1px solid var(--gx-red-line); color:var(--gx-red-dark); border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:12px; }
+
+#page-reports .pv-hbars{ display:flex; flex-direction:column; gap:10px; }
+#page-reports .pv-hbar{ display:grid; grid-template-columns:minmax(80px,30%) 1fr auto; align-items:center; gap:10px; font-size:13px; }
+#page-reports .pv-hbar-label{ color:var(--gx-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#page-reports .pv-hbar-track{ height:10px; background:#f1f1f3; border-radius:999px; overflow:hidden; }
+#page-reports .pv-hbar-fill{ display:block; height:100%; background:var(--gx-series); border-radius:999px; }
+#page-reports .pv-hbar-n{ font-weight:600; font-variant-numeric:tabular-nums; color:var(--gx-text); text-align:right; }
+#page-reports .pv-hbar-n small{ display:block; font-weight:500; font-size:11px; color:var(--gx-muted); }
+
+#page-reports .pv-leads{ display:flex; flex-direction:column; }
+#page-reports .pv-lead{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--gx-border); font-size:13px; flex-wrap:wrap; }
+#page-reports .pv-lead:last-child{ border-bottom:0; }
+#page-reports .pv-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; background:#cbd5e1; }
+#page-reports .pv-dot.red{ background:#dc2626; } #page-reports .pv-dot.orange{ background:#f59e0b; } #page-reports .pv-dot.green{ background:#16a34a; }
+#page-reports .pv-lead-name{ font-weight:600; color:var(--gx-text); text-decoration:none; }
+#page-reports .pv-lead-name:hover{ color:var(--gx-red); text-decoration:underline; }
+#page-reports .pv-lead-meta{ color:var(--gx-muted); font-size:12px; }
+#page-reports .pv-lead-link{ margin-left:auto; color:var(--gx-red); font-weight:600; font-size:12px; text-decoration:none; white-space:nowrap; }
+#page-reports .pv-lead-link:hover{ color:var(--gx-red-dark); text-decoration:underline; }
+
+#page-reports .pv-empty{ text-align:center; padding:28px 16px; color:var(--gx-muted); }
+#page-reports .pv-empty-ic{ font-size:22px; color:#c7c7cc; }
+#page-reports .pv-empty h3{ font-size:15px; color:var(--gx-text); margin:6px 0 4px; }
+#page-reports .pv-empty p{ font-size:13px; max-width:420px; margin:0 auto 12px; line-height:1.55; }
+#page-reports .pv-btn{ background:var(--gx-red); color:#fff; border:0; }
+#page-reports .pv-skel{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+#page-reports .pv-skel div{ height:96px; border-radius:var(--gx-radius); background:linear-gradient(90deg,#f1f1f3,#f7f7f8,#f1f1f3); border:1px solid var(--gx-border); }
+
+@media (max-width:1100px){ #page-reports .pv-kpis, #page-reports .pv-skel{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:760px){ #page-reports .pv-grid2{ grid-template-columns:1fr; } }
+@media (max-width:480px){
+  #page-reports .pv-kpis{ gap:8px; }
+  #page-reports .pv-kpi{ padding:12px; }
+  #page-reports .pv-kpi-value{ font-size:24px; }
+  #page-reports .pv-card{ padding:14px; }
+  #page-reports .pv-lead-link{ margin-left:19px; }
+}
+@media print{ #page-reports .pv-toolbar{ display:none; } #page-reports .pv-card, #page-reports .pv-kpi{ break-inside:avoid; } }
+
+/* Settings: Diagnostics + About folded into a collapsed "Advanced" group */
+#page-settings .pv-adv{ margin-top:8px; border:1px solid var(--gx-border); border-radius:var(--gx-radius); background:#fff; }
+#page-settings .pv-adv > summary{ cursor:pointer; padding:14px 18px; font-weight:600; color:var(--gx-text); list-style:none; }
+#page-settings .pv-adv > summary::-webkit-details-marker{ display:none; }
+#page-settings .pv-adv > summary::before{ content:"\25B8"; display:inline-block; width:16px; color:var(--gx-muted); transition:transform .15s; }
+#page-settings .pv-adv[open] > summary::before{ transform:rotate(90deg); }
+#page-settings .pv-adv > summary span{ font-weight:400; color:var(--gx-muted); font-size:13px; margin-left:6px; }
+#page-settings .pv-adv[open] > summary{ border-bottom:1px solid var(--gx-border); }
+#page-settings .pv-adv > .settings-section{ margin:12px; }
