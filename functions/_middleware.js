@@ -214,5 +214,64 @@ async function gate(context) {
   return new Response(null, { status: 302, headers: { Location: home.toString(), 'Cache-Control': 'no-store' } });
 }
 
-// Gate first, then the Intelligence menu injector (v5.13.0).
-export const onRequest = [gate, intelInject];
+// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────
+// Decision 2026-10-13: every Gershon app looks like Linalysis (the master design:
+// white 240px sidebar, solid-red active pill, white 12px cards) in the Gershon.ai red
+// #CC3333. app/unified-theme.css (served at /unified-theme.css, public like every .css)
+// re-skins Pulse; this step links it into the landing page, the dashboard and /admin
+// on the fly, so the 244 KB app.html is never re-uploaded. Same pattern as Radar.
+//   - Inserted once, before </head>, and only if the page does not already reference
+//     unified-theme.css — it switches itself off once the theme is folded into the HTML.
+//   - Raises the dashboard's version stamps (sidebar footer + Settings > App Version) to
+//     APP_VERSION — never lowers them.
+//   - Swaps the dashboard favicon's LinkedIn blue for the Gershon red (exact literal,
+//     idempotent: once replaced the old string is gone).
+// Status colours (Red / Orange / Green triage) are untouched by design.
+const APP_VERSION = '5.14.0';
+const THEME_HREF = '/unified-theme.css?v=' + APP_VERSION;
+const THEMED_PAGES = new Set(['/', '/index.html', '/app', '/app.html', '/admin', '/admin.html']);
+const DASHBOARD_PAGES = new Set(['/app', '/app.html']);
+const FAVICON_SWAP = ["fill='%230077b5'", "fill='%23CC3333'"];
+
+function cmpVer(a, b) {
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+  return 0;
+}
+
+function raiseVer(all, a, v, b) { return cmpVer(v, APP_VERSION) < 0 ? a + APP_VERSION + b : all; }
+
+export function applyUnifiedTheme(html, path) {
+  let out = html;
+  if (out.indexOf('unified-theme.css') === -1 && out.indexOf('</head>') !== -1) {
+    const at = out.indexOf('</head>');
+    out = out.slice(0, at) + '<link rel="stylesheet" href="' + THEME_HREF + '">\n' + out.slice(at);
+  }
+  if (DASHBOARD_PAGES.has(path)) {
+    out = out.split(FAVICON_SWAP[0]).join(FAVICON_SWAP[1]);
+    // Sidebar footer: "… Online</span> &middot; v5.12.0</div>"
+    out = out.replace(/(id="footer-status-text">[^<]*<\/span> &middot; v)(\d+\.\d+\.\d+)(<\/div>)/, raiseVer);
+    // Settings > About: <label>App Version</label> <input … value="v5.12.0" readonly>
+    out = out.replace(/(<label>App Version<\/label>\s*<input type="text" value="v)(\d+\.\d+\.\d+)(")/, raiseVer);
+  }
+  return out;
+}
+
+async function themeInject({ request, next }) {
+  const res = await next();
+  const path = normalize(new URL(request.url).pathname);
+  const type = res.headers.get('content-type') || '';
+  if (!THEMED_PAGES.has(path) || !type.includes('text/html') || res.status !== 200) return res;
+  try {
+    const html = await res.clone().text();
+    const out = applyUnifiedTheme(html, path);
+    if (out === html) return res;
+    const h = new Headers(res.headers);
+    h.delete('content-length'); h.delete('etag');
+    h.set('cache-control', 'no-cache');
+    return new Response(out, { status: 200, headers: h });
+  } catch (e) { return res; }   // a styling step must never take the page down
+}
+
+// Gate first, then the Intelligence menu injector (v5.13.0), then the unified theme (v5.14.0).
+export const onRequest = [gate, intelInject, themeInject];

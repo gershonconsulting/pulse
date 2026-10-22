@@ -1,7 +1,7 @@
 ================================================================
 HANDOFF.txt  -  pulse
 Written by: Claude (Anthropic) - token-limit handoff protocol
-Date: 2026-09-09
+Date: 2026-09-09 (updated 2026-10-22)
 ================================================================
 
 0. WHO YOU ARE READING THIS
@@ -50,6 +50,27 @@ Secrets       : 1Password. Never commit them.
 
 3. RECENTLY DONE  [DONE]
 ----------------------------------------------------------------
+- 2026-10-22 nightly (branch nightly/2026-10-22-unified-design, v5.14.0)
+  Unified Gershon design (decision 2026-10-13: every app looks like
+  Linalysis, main colour Gershon.ai red #CC3333; Radar was first).
+  ✅ New app/unified-theme.css: white 240px sidebar, solid red active
+     pill, white 12px cards, white page header, red primary buttons,
+     red focus rings, red tabs/period switches; landing page re-skinned
+     (light hero, red buttons, red final band). Red/Orange/Green TRIAGE
+     colours and chart status colours untouched; "total" data series
+     use neutral slate so they never read as an alert.
+  ✅ functions/_middleware.js: new themeInject step (after gate and
+     intelInject) links the CSS into /, /app.html, /admin on the fly -
+     app.html (244KB) is NOT edited. Raises the version stamp to v5.14.0,
+     red favicon. Idempotent; switches off once folded into the HTML.
+  ✅ Also fixes: horizontal scroll at phone width, menu button covering
+     the title, admin drawer shadow band.
+  ✅ Tested locally (real middleware chain + Playwright, desktop + phone,
+     sample data only).
+  ❌ No live preview: Pulse deploys only from main (GitHub Actions), so
+     the branch has no test link. Preview = private Claude artifact
+     "Pulse Unified Design" (claude.ai/artifact/3deAXZfinic68Z54fQJEjS),
+     a sample-data snapshot. Merge = live (Olivier's call).
 - v5.9.1 (2026-09-09) fix: the viewer 'Last sync' field read an endpoint
   that does not exist and therefore always displayed 'None'.
 - Server-side latest collector version bumped to 1.19.0.
@@ -63,6 +84,11 @@ Secrets       : 1Password. Never commit them.
 
 4. PENDING  [TODO]
 ----------------------------------------------------------------
+- ❌ Unified design PR (nightly/2026-10-22-unified-design) - merge
+  pending (Olivier's call).
+- ❌ Fold unified-theme.css into the HTML the next time app.html,
+  index.html or admin.html is edited by hand (the middleware step then
+  switches itself off).
 - LinkedIn 'Sign In with OpenID Connect' access is STILL PENDING on the
   LinkedIn Developer portal. Until it is granted, the live-OAuth half of
   the hybrid model is limited. This is an external approval - it cannot
