@@ -59,16 +59,20 @@
     return s;
   }
 
-  function snThreadUrl(m) {
-    var link = linkedinUrl(m.conversationLink);
+  function inboxId(u) {
+    var link = linkedinUrl(u);
     var mm = link && new URL(link).pathname.match(/^\/sales\/inbox\/([^/?#]+)/);
-    var id = validThreadId(mm && mm[1]) || validThreadId(m.snThreadId) ||
+    return validThreadId(mm && mm[1]);
+  }
+  function snThreadUrl(m) {
+    // snConversationLink: kept server-side across LinkedIn scans (functions/api/messages.js)
+    var id = inboxId(m.snConversationLink) || inboxId(m.conversationLink) || validThreadId(m.snThreadId) ||
              (m.source === 'sales-navigator' ? validThreadId(m.threadId) : '');
     return id ? LI + '/sales/inbox/' + encodeURIComponent(id).replace(/%3D/g, '=') : '';
   }
 
   function snLeadUrl(m) {
-    var c = [m.salesNavUrl, m.leadUrl, m.profileUrl];
+    var c = [m.snProfileUrl, m.salesNavUrl, m.leadUrl, m.profileUrl];
     for (var i = 0; i < c.length; i++) {
       var u = linkedinUrl(c[i]);
       if (u && /^\/sales\/(lead|people)\/[^/]{6,}/.test(new URL(u).pathname)) return u;
