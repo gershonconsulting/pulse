@@ -119,7 +119,7 @@ async function handle(request, env) {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: env.EMAIL_FROM || 'Pulse <pulse@gershon.ai>',
+        from: env.EMAIL_FROM || 'GC Pulse <pulse@gershon.ai>',
         to,
         subject: `⚠ Pulse has stopped collecting — no sync in ${hours}h`,
         html,
