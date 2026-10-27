@@ -38,7 +38,7 @@ import {
   renderEstateEmail, renderEstatePdf, estateSubject, estateFilename,
 } from '../_monthly-core.js';
 
-export const APP_VERSION = '5.11.1';
+export const APP_VERSION = '5.11.0';
 const CONVENTION_TO = 'report@gershonconsulting.com';
 const ESTATE_FROM = 'GC Pulse <pulse@gershon.ai>';   // internal report: GC prefix
 const CLIENT_FROM = 'Pulse <pulse@gershon.ai>';      // client-facing: product brand
