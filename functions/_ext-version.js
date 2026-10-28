@@ -17,7 +17,10 @@
 // to viewing only stands down instead of syncing), and what app/app.html declares.
 // The copy committed under linkedin-pulse-extension/ is older than the shipped
 // app/pulse-extension.zip — do not take it as the truth.
-export const LATEST_EXT_VERSION = '1.19.0';
+// 1.20.0 (2026-10-28) = VERIFIED capture: every conversation is checked to really be
+// the clicked person's before it is stored (fixes crossed threads on Anne Bougel's
+// account), presence text stripped from names, Sales Navigator scrolls past 19 rows.
+export const LATEST_EXT_VERSION = '1.20.0';
 
 export function latestExtVersion(env) {
   const override = ((env && env.LATEST_EXT_VERSION) || '').trim();
