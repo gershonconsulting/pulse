@@ -227,8 +227,16 @@ async function gate(context) {
 //   - Swaps the dashboard favicon's LinkedIn blue for the Gershon red (exact literal,
 //     idempotent: once replaced the old string is gone).
 // Status colours (Red / Orange / Green triage) are untouched by design.
-const APP_VERSION = '5.14.0';
+//
+// v5.15.0 (2026-10-22, second nightly PR): the same step also adds
+// app/pulse-enhance.js (deferred, before </body>) and app/pulse-enhance.css (before
+// </head>) to the dashboard - fixed "Open in Sales Nav" links, the rebuilt Reports
+// page and the collapsed Settings > Advanced group. Each is inserted once, only if
+// the page does not already reference it.
+const APP_VERSION = '5.15.0';
 const THEME_HREF = '/unified-theme.css?v=' + APP_VERSION;
+const ENHANCE_SRC = '/pulse-enhance.js?v=' + APP_VERSION;
+const ENHANCE_CSS = '/pulse-enhance.css?v=' + APP_VERSION;
 const THEMED_PAGES = new Set(['/', '/index.html', '/app', '/app.html', '/admin', '/admin.html']);
 const DASHBOARD_PAGES = new Set(['/app', '/app.html']);
 const FAVICON_SWAP = ["fill='%230077b5'", "fill='%23CC3333'"];
@@ -248,6 +256,14 @@ export function applyUnifiedTheme(html, path) {
     out = out.slice(0, at) + '<link rel="stylesheet" href="' + THEME_HREF + '">\n' + out.slice(at);
   }
   if (DASHBOARD_PAGES.has(path)) {
+    if (out.indexOf('pulse-enhance.js') === -1 && out.lastIndexOf('</body>') !== -1) {
+      const end = out.lastIndexOf('</body>');
+      out = out.slice(0, end) + '<script src="' + ENHANCE_SRC + '" defer></script>\n' + out.slice(end);
+    }
+    if (out.indexOf('pulse-enhance.css') === -1 && out.indexOf('</head>') !== -1) {
+      const at = out.indexOf('</head>');
+      out = out.slice(0, at) + '<link rel="stylesheet" href="' + ENHANCE_CSS + '">\n' + out.slice(at);
+    }
     out = out.split(FAVICON_SWAP[0]).join(FAVICON_SWAP[1]);
     // Sidebar footer: "… Online</span> &middot; v5.12.0</div>"
     out = out.replace(/(id="footer-status-text">[^<]*<\/span> &middot; v)(\d+\.\d+\.\d+)(<\/div>)/, raiseVer);
@@ -273,5 +289,6 @@ async function themeInject({ request, next }) {
   } catch (e) { return res; }   // a styling step must never take the page down
 }
 
-// Gate first, then the Intelligence menu injector (v5.13.0), then the unified theme (v5.14.0).
+// Gate first, then the Intelligence menu injector (v5.13.0), then the unified theme
+// (v5.14.0) + dashboard enhancements (v5.15.0).
 export const onRequest = [gate, intelInject, themeInject];
