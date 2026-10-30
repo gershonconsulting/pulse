@@ -4,6 +4,19 @@
 // DELETE /api/messages — clear all data
 
 import { json, readData, writeData, clientIdOf } from './_shared.js';
+
+// v5.13.0 — LinkedIn appends presence text to names ("Anne Dupont is online",
+// "… was last active 2 hours ago"); strip it so one person is one record.
+const PRESENCE_RE = /\s+(is online|is reachable|was (last )?active.*|status is .*|active now.*|est en ligne|en ligne)$/i;
+function cleanName(s) {
+  return String(s || '').split('\n')[0].replace(PRESENCE_RE, '').replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+}
+function cmpVersion(a, b) {
+  const A = String(a || '0').split('.').map((n) => parseInt(n, 10) || 0);
+  const B = String(b || '0').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(A.length, B.length); i++) { const d = (A[i] || 0) - (B[i] || 0); if (d) return d; }
+  return 0;
+}
 import { recordDailySnapshot } from '../_daily-snapshot.js';
 import { applySocialRule } from '../_social-rules.js';
 import { applyDeclineRule, applyDeclineRulesAsync } from '../_decline-rules.js';
@@ -81,6 +94,13 @@ export async function onRequestPost(context) {
     const data = await readData(env.PULSE_KV, clientId);
     const now = new Date().toISOString();
 
+    // v5.13.0 — a tenant that was reset to a clean, mirrored store only accepts
+    // VERIFIED crawls. An older collector (<= 1.19.0) could file one person's thread
+    // under another person's name, so its data is refused instead of stored wrong.
+    if (data.settings && data.settings.mirror && cmpVersion((scanMeta || {}).version, '1.20.0') < 0) {
+      return json({ error: 'Pulse extension update required: install v1.20.0 from Pulse → Extension, then sync again.', updateRequired: '1.20.0' }, 426);
+    }
+
     // 2026-10-04 — "No thank you" / "not for us" / "maybe later" → Orange (keywords + cached AI fallback).
     try {
       conversations = await applyDeclineRulesAsync(conversations, new Map(data.messages.map(m => [m.name, m])), env);
@@ -99,20 +119,60 @@ export async function onRequestPost(context) {
     data.scans.unshift(scan);
     if (data.scans.length > 100) data.scans = data.scans.slice(0, 100);
 
-    // Upsert messages by name (latest scan wins, preserve manual overrides)
-    // Track status transitions for progress tracking
-    const existingByName = new Map(data.messages.map(m => [m.name, m]));
-    const incomingNames = new Set(conversations.map(c => c.name));
+    // ── v5.13.0 (2026-10-28) — identity is the THREAD, not the name ───────────
+    // Before this, records were upserted by display name. Collector <= 1.19.0 could
+    // store one person's thread under another person's name, LinkedIn adds presence
+    // text to names ("X is online"), and two people can share a name — so the same
+    // conversation ended up under several names and different people got merged.
+    // Now: key = threadId (or the thread part of conversationLink); name is only a
+    // fallback for legacy records that never had a thread id. A re-crawl therefore
+    // HEALS a crossed record: the thread arrives with its real name and replaces it.
+    const keyOf = (m) => {
+      if (m.threadId) return 't:' + m.threadId;
+      const l = String(m.conversationLink || '');
+      const mt = l.match(/\/(?:messaging\/thread|sales\/inbox)\/([^/?#]+)/);
+      return mt ? 't:' + mt[1] : 'n:' + m.name;
+    };
+    for (const c of conversations) {
+      c.name = cleanName(c.name);
+      if (!c.threadId) { const k = keyOf(c); if (k.startsWith('t:')) c.threadId = k.slice(2); }
+    }
+    data.messages = (data.messages || []).map((m) => ({ ...m, name: cleanName(m.name) }));
+
+    const existingByKey = new Map();
+    const legacyByName = new Map();
+    for (const m of data.messages) {
+      const k = keyOf(m);
+      const prevSame = existingByKey.get(k);
+      // duplicates of one thread (e.g. "X" and "X is online"): keep the newest,
+      // but never lose manual work that sits on the older copy.
+      if (!prevSame) existingByKey.set(k, m);
+      else {
+        const newer = String(m.updatedAt || '') > String(prevSame.updatedAt || '') ? m : prevSame;
+        const older = newer === m ? prevSame : m;
+        const keep = { ...newer };
+        for (const f of ['manualStatus', 'focus', 'done', 'doneAt', 'note', 'manualGrade', 'fit', 'interest']) {
+          if ((keep[f] === undefined || keep[f] === null || keep[f] === '' || keep[f] === false) && older[f] !== undefined && older[f] !== null && older[f] !== '' && older[f] !== false) keep[f] = older[f];
+        }
+        existingByKey.set(k, keep);
+      }
+      if (k.startsWith('n:')) legacyByName.set(m.name, m);
+    }
+    const carry = data.manualCarry || {};
+    const touched = new Set();
     const transitions = [];  // { name, from, to }
     let newCount = 0;
     let unchangedCount = 0;
 
     for (const conv of conversations) {
-      const prev = existingByName.get(conv.name);
+      const k = keyOf(conv);
+      let prev = existingByKey.get(k);
+      let prevKey = k;
+      if (!prev && legacyByName.has(conv.name)) { prev = legacyByName.get(conv.name); prevKey = 'n:' + conv.name; }
+      if (prev && prevKey !== k) existingByKey.delete(prevKey);
       const prevStatus = prev ? prev.status : null;
       const newStatus = conv.status;
 
-      // Track transition
       if (!prev) {
         newCount++;
       } else if (prevStatus !== newStatus) {
@@ -121,11 +181,9 @@ export async function onRequestPost(context) {
         unchangedCount++;
       }
 
-      // Build status history
       let statusHistory = (prev && prev.statusHistory) ? [...prev.statusHistory] : [];
       if (prev && prevStatus !== newStatus) {
         statusHistory.push({ from: prevStatus, to: newStatus, timestamp: now, scanId: scan.id });
-        // Keep last 20 transitions per message
         if (statusHistory.length > 20) statusHistory = statusHistory.slice(-20);
       }
 
@@ -133,27 +191,54 @@ export async function onRequestPost(context) {
         ...conv,
         scanId: scan.id,
         updatedAt: now,
+        lastSeenAt: now,
         previousStatus: prevStatus,
         statusHistory,
         firstSeenAt: prev ? (prev.firstSeenAt || prev.updatedAt || now) : now,
       };
-      if (prev) {
+      if (prev && prev.name && prev.name !== conv.name) merged.renamedFrom = prev.name;
+      const manualSrc = prev || (conv.threadId && carry[conv.threadId]) || null;
+      if (manualSrc) {
         // Preserve the user's manual work across re-syncs — a fresh scan must
         // never wipe a manual status override, star (focus), check (done), or note.
-        if (prev.manualStatus) { merged.manualStatus = prev.manualStatus; merged.status = prev.manualStatus; }
-        if (prev.focus !== undefined) merged.focus = prev.focus;
-        if (prev.done !== undefined) merged.done = prev.done;
-        if (prev.doneAt !== undefined) merged.doneAt = prev.doneAt;
-        if (prev.note !== undefined) merged.note = prev.note;
-        // Keep a previously-captured location if this scan didn't find one.
+        if (manualSrc.manualStatus) { merged.manualStatus = manualSrc.manualStatus; merged.status = manualSrc.manualStatus; }
+        if (manualSrc.focus !== undefined) merged.focus = manualSrc.focus;
+        if (manualSrc.done !== undefined) merged.done = manualSrc.done;
+        if (manualSrc.doneAt !== undefined) merged.doneAt = manualSrc.doneAt;
+        if (manualSrc.note !== undefined) merged.note = manualSrc.note;
+        if (manualSrc.manualGrade) { merged.manualGrade = true; if (manualSrc.fit !== undefined) merged.fit = manualSrc.fit; if (manualSrc.interest !== undefined) merged.interest = manualSrc.interest; }
+      }
+      if (prev) {
         if (!merged.city && prev.city) merged.city = prev.city;
         if (!merged.country && prev.country) merged.country = prev.country;
       }
-      existingByName.set(conv.name, merged);
+      if (conv.threadId && carry[conv.threadId]) { delete carry[conv.threadId]; data.manualCarry = carry; }
+      existingByKey.set(k, merged);
+      touched.add(k);
     }
-    // 2026-10-02 — also fix records stored before this rule existed (e.g. last week's
-    // birthday wishes). applySocialRule leaves manual overrides untouched.
-    data.messages = Array.from(existingByName.values()).map(applySocialRule).map(applyDeclineRule);
+
+    // Mirror mode (per tenant, set by /api/admin/reset-tenant): after a COMPLETE,
+    // verified crawl (collector >= 1.20.0) of one inbox, conversations of that inbox
+    // that were not seen are moved to `archived` — the dashboard then shows exactly
+    // what is in the inbox. Records with manual work are kept.
+    let archivedNow = 0;
+    const meta = scanMeta || {};
+    const platformOf = (m) => m.platform || (/\/sales\//.test(m.conversationLink || '') ? 'sales-navigator' : 'linkedin');
+    const crawlPlatform = meta.source === 'sales-navigator' ? 'sales-navigator' : (meta.source === 'linkedin-messaging' ? 'linkedin' : null);
+    if (data.settings && data.settings.mirror && meta.complete && crawlPlatform && cmpVersion(meta.version, '1.20.0') >= 0) {
+      data.archived = data.archived || [];
+      for (const [k, m] of Array.from(existingByKey.entries())) {
+        if (touched.has(k) || platformOf(m) !== crawlPlatform) continue;
+        if (m.manualStatus || m.focus || m.done || m.note || m.manualGrade) continue;
+        existingByKey.delete(k);
+        data.archived.unshift({ ...m, archivedAt: now, archivedBy: scan.id });
+        archivedNow++;
+      }
+      if (data.archived.length > 1000) data.archived = data.archived.slice(0, 1000);
+    }
+    scan.archived = archivedNow;
+
+    data.messages = Array.from(existingByKey.values()).map(applySocialRule).map(applyDeclineRule);
 
     // Compute transition summary for the scan record
     const transitionSummary = {};
