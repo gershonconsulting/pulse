@@ -47,6 +47,7 @@ const PUBLIC_PATHS = new Set([
   '/api/daily-report',  // digest endpoint — carries its own DAILY_REPORT_SECRET
   '/api/weekly-status', // internal all-accounts weekly report — same secret, same reason
   '/api/monthly-report', // monthly client + all-clients report — same secret, same reason
+  '/api/matrix-stats',  // Client Platform Matrix feed — carries its own secret (SHA-256 checked in the handler)
   '/favicon.ico',
   '/favicon.svg',
   '/robots.txt',
