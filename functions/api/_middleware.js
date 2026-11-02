@@ -2,6 +2,9 @@
 // CORS middleware — runs before every /api/* handler.
 
 export async function onRequest({ request, next }) {
+  // Server-to-server only: no CORS headers, no preflight (the handler answers 405).
+  if (new URL(request.url).pathname.replace(/\/+$/, '') === '/api/matrix-stats') return next();
+
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
