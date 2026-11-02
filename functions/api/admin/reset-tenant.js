@@ -36,7 +36,8 @@ export async function onRequestPost({ request, env, data }) {
   const current = await readData(env.PULSE_KV, client.id);
   const carry = {};
   for (const m of current.messages || []) {
-    const key = m.threadId || null;
+    // Legacy records (pre-1.20) have no threadId but do carry the thread in their link.
+    const key = m.threadId || ((String(m.conversationLink || '').match(/\/(?:messaging\/thread|sales\/inbox)\/([^/?#]+)/) || [])[1]) || null;
     if (!key) continue;
     const manual = {};
     for (const f of MANUAL_FIELDS) {
