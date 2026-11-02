@@ -50,6 +50,7 @@ Secrets       : 1Password. Never commit them.
 
 3. RECENTLY DONE  [DONE]
 ----------------------------------------------------------------
+- 2026-11-02: POST /api/matrix-stats added (read-only Client Platform Matrix probe, hashed secret, same contract as Linalysis; matches emails via client registry/ALLOWLIST).
 - v5.9.1 (2026-09-09) fix: the viewer 'Last sync' field read an endpoint
   that does not exist and therefore always displayed 'None'.
 - Server-side latest collector version bumped to 1.19.0.
