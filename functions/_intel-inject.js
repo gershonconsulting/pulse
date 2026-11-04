@@ -4,6 +4,8 @@
 // HTMLRewriter, so app.html itself stays untouched.
 // The menu: AI Analysis · AI Suggestions · AI Chat — all on Cloudflare Workers AI (/api/intelligence).
 
+import { latestExtVersion } from './_ext-version.js';
+
 const SNIPPET = `<script>
 window.GERSHON_INTEL = {
   app: 'Pulse (LinkedIn message triage)',
@@ -24,12 +26,25 @@ window.GERSHON_INTEL = {
 
 const DASHBOARD = new Set(['/app', '/app.html']);
 
-export async function intelInject({ request, next }) {
+export async function intelInject({ request, next, env }) {
   const res = await next();
   const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
   const type = res.headers.get('content-type') || '';
   if (!DASHBOARD.has(path) || !type.includes('text/html') || res.status !== 200) return res;
+  // v5.13.1 (2026-11-02): the dashboard's in-page LATEST_EXT_VERSION is rewritten to the
+  // server's single source of truth (functions/_ext-version.js), so an extension bump no
+  // longer needs a 240 KB app.html edit — only _ext-version.js + the zip.
+  const latest = latestExtVersion(env);
+  let buf = '';
   return new HTMLRewriter()
+    .on('script:not([src])', { text(t) {
+      buf += t.text;
+      if (!t.lastInTextNode) { t.remove(); return; }
+      const out = buf.indexOf('const LATEST_EXT_VERSION') === -1 ? buf
+        : buf.replace(/const LATEST_EXT_VERSION = '[\d.]+';/, "const LATEST_EXT_VERSION = '" + latest + "';");
+      buf = '';
+      t.replace(out, { html: true });
+    } })
     .on('body', { element(el) { el.append(SNIPPET, { html: true }); } })
     .transform(res);
 }

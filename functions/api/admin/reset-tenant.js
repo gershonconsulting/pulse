@@ -25,16 +25,19 @@ export async function onRequestPost({ request, env, data }) {
   let body = {};
   try { body = await request.json(); } catch (e) { /* empty body */ }
   const id = String((body && body.clientId) || '').trim();
-  if (!id || id === '__default') return json({ ok: false, error: 'clientId required (the default tenant cannot be reset here)' }, 400);
+  if (!id) return json({ ok: false, error: 'clientId required' }, 400);
 
   const store = await readAdminStore(env);
-  const client = findClient(store, id);
+  // v5.13.1 (2026-11-02): the default (Gershon) store can be reset too — it held the
+  // crossed "Arnaud FOURNIER" record. '__default' maps to clientId null → KV key `data`.
+  const client = id === '__default' ? { id: null } : findClient(store, id);
   if (!client) return json({ ok: false, error: 'not-found' }, 404);
 
   const current = await readData(env.PULSE_KV, client.id);
   const carry = {};
   for (const m of current.messages || []) {
-    const key = m.threadId || null;
+    // Legacy records (pre-1.20) have no threadId but do carry the thread in their link.
+    const key = m.threadId || ((String(m.conversationLink || '').match(/\/(?:messaging\/thread|sales\/inbox)\/([^/?#]+)/) || [])[1]) || null;
     if (!key) continue;
     const manual = {};
     for (const f of MANUAL_FIELDS) {
@@ -46,7 +49,7 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   const summary = {
-    clientId: client.id,
+    clientId: client.id || '__default',
     before: (current.messages || []).length,
     scansBefore: (current.scans || []).length,
     manualCarried: Object.keys(carry).length,
@@ -65,7 +68,7 @@ export async function onRequestPost({ request, env, data }) {
     settings: { ...(current.settings || {}), mirror: summary.mirror, resetAt: new Date().toISOString(), backupKey },
   });
 
-  audit(store, data.adminEmail, 'tenant.reset', client.id, { before: summary.before, backupKey });
+  audit(store, data.adminEmail, 'tenant.reset', client.id || '__default', { before: summary.before, backupKey });
   await writeAdminStore(env, store);
 
   return json({ ok: true, ...summary, backupKey });

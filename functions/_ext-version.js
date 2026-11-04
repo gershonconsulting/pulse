@@ -20,7 +20,13 @@
 // 1.20.0 (2026-10-28) = VERIFIED capture: every conversation is checked to really be
 // the clicked person's before it is stored (fixes crossed threads on Anne Bougel's
 // account), presence text stripped from names, Sales Navigator scrolls past 19 rows.
-export const LATEST_EXT_VERSION = '1.20.0';
+// 1.21.0 (2026-11-02) = CONTENT-verified capture: 1.20.0 checked URL + header but the
+// message list could still be another conversation's (crossed snippets found on every
+// tenant, e.g. "Sanjay Hari" holding "Hi Scott…"). Now the pane's last message must match
+// the list row's own preview, the owner's "Hi <name>" must name the header person, and
+// the profile link is kept only when labelled with that person. Sales Nav: same preview
+// check, no more 3 s "capture anyway" fallback.
+export const LATEST_EXT_VERSION = '1.21.0';
 
 export function latestExtVersion(env) {
   const override = ((env && env.LATEST_EXT_VERSION) || '').trim();

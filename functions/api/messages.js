@@ -97,8 +97,8 @@ export async function onRequestPost(context) {
     // v5.13.0 — a tenant that was reset to a clean, mirrored store only accepts
     // VERIFIED crawls. An older collector (<= 1.19.0) could file one person's thread
     // under another person's name, so its data is refused instead of stored wrong.
-    if (data.settings && data.settings.mirror && cmpVersion((scanMeta || {}).version, '1.20.0') < 0) {
-      return json({ error: 'Pulse extension update required: install v1.20.0 from Pulse → Extension, then sync again.', updateRequired: '1.20.0' }, 426);
+    if (data.settings && data.settings.mirror && cmpVersion((scanMeta || {}).version, '1.21.0') < 0) {
+      return json({ error: 'Pulse extension update required: install v1.21.0 from Pulse → Extension, then sync again.', updateRequired: '1.21.0' }, 426);
     }
 
     // 2026-10-04 — "No thank you" / "not for us" / "maybe later" → Orange (keywords + cached AI fallback).
@@ -225,7 +225,7 @@ export async function onRequestPost(context) {
     const meta = scanMeta || {};
     const platformOf = (m) => m.platform || (/\/sales\//.test(m.conversationLink || '') ? 'sales-navigator' : 'linkedin');
     const crawlPlatform = meta.source === 'sales-navigator' ? 'sales-navigator' : (meta.source === 'linkedin-messaging' ? 'linkedin' : null);
-    if (data.settings && data.settings.mirror && meta.complete && crawlPlatform && cmpVersion(meta.version, '1.20.0') >= 0) {
+    if (data.settings && data.settings.mirror && meta.complete && crawlPlatform && cmpVersion(meta.version, '1.21.0') >= 0) {
       data.archived = data.archived || [];
       for (const [k, m] of Array.from(existingByKey.entries())) {
         if (touched.has(k) || platformOf(m) !== crawlPlatform) continue;
