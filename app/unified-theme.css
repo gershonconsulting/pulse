@@ -1,0 +1,293 @@
+/* =====================================================================
+   Pulse - unified Gershon design (v5.14.0, 2026-10-22)
+   Decision 2026-10-13: every Gershon app looks like Linalysis (the master
+   design) and the main colour everywhere is the Gershon.ai red #CC3333.
+   This file re-skins Pulse without touching the 244 KB app.html: it is
+   linked into /, /app.html and /admin by functions/_middleware.js
+   (themeInject), the same way Radar's unified-theme.css is.
+
+   Red / Orange / Green are Pulse's TRIAGE (status) colours, not brand:
+   --red / --orange / --green and the chart tokens --c-* are deliberately
+   NOT touched, and every status chip keeps its tinted bg + border so an
+   alert never reads as "just the brand colour". Only the brand token
+   (--accent, LinkedIn blue #0077b5) becomes Gershon red.
+   Inside charts and KPI tiles the old accent meant "total / volume" data,
+   which next to a red "follow-up" series would read as an alert - so data
+   areas get a neutral slate series colour instead (--gx-series).
+
+   Scoping: app + admin rules sit under body > .sidebar / .main (those only
+   exist in app.html and admin.html); landing rules sit under the landing-
+   only sections (body > header, section.hero, section.pad, section.final,
+   footer), so one file can be linked on all three pages.
+   ===================================================================== */
+
+/* ---------- Tokens (html:root beats the page's own :root) ---------- */
+html:root{
+  --gx-red:#CC3333; --gx-red-dark:#a8281f; --gx-red-light:#fdf2f2; --gx-red-line:#f3caca;
+  --gx-text:#1d1d1f; --gx-muted:#6e6e73; --gx-border:#e5e7eb; --gx-bg:#fafafa; --gx-radius:12px;
+  --gx-series:#475569;           /* neutral data colour for "total" series */
+  --gx-ring:0 0 0 3px rgba(204,51,51,.15);
+
+  /* app.html + admin.html tokens (status tokens --red/--orange/--green untouched) */
+  --accent:var(--gx-red); --accent-dark:var(--gx-red-dark);
+  --bg:var(--gx-bg); --text:var(--gx-text); --muted:var(--gx-muted);
+  --border:var(--gx-border); --card:#ffffff; --sidebar-bg:#ffffff; --sidebar-w:240px;
+  --radius:var(--gx-radius); --shadow:0 1px 2px rgba(16,24,40,.04);
+
+  /* landing-page tokens (index.html) */
+  --brand:var(--gx-red); --brand-ink:var(--gx-red-dark); --brand2:#f08a8a;
+  --grad:linear-gradient(120deg,#CC3333 0%,#a8281f 100%);
+  --line:var(--gx-border); --soft:var(--gx-bg);
+}
+html body{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif; }
+
+/* =====================================================================
+   APP + ADMIN (app.html, admin.html)
+   ===================================================================== */
+body > .main{ background:var(--gx-bg); color:var(--gx-text); }
+
+/* ---------- Sidebar: white, 240px, 1px border-right ---------- */
+body > .sidebar{ width:240px; background:#fff; border-right:1px solid var(--gx-border); }
+body > .sidebar .sidebar-brand{ border-bottom-color:var(--gx-border); }
+body > .sidebar .sidebar-brand h1{ color:var(--gx-red); letter-spacing:-0.02em; }
+body > .sidebar .sidebar-brand .brand-sub{ color:var(--gx-muted); }
+body > .sidebar .nav-item{ color:var(--gx-text); font-weight:500; border-radius:8px; }
+body > .sidebar .nav-item:hover{ background:var(--gx-red-light); color:var(--gx-red); }
+body > .sidebar .nav-item.active{ background:var(--gx-red); color:#fff; font-weight:600; }
+body > .sidebar .nav-item.active:hover{ background:var(--gx-red-dark); color:#fff; }
+/* the red "follow-up" count is an ALERT badge: keep it alert red, ringed so it
+   stays distinct from the brand-red hover/active pill */
+body > .sidebar .nav-item .nav-badge{ box-shadow:0 0 0 2px #fff; }
+body > .sidebar .nav-item.active .nav-badge{ background:#fff; color:var(--red,#dc2626); box-shadow:none; }
+body > .sidebar .nav-sep{ background:var(--gx-border); }
+body > .sidebar .sidebar-footer{ border-top-color:var(--gx-border); }
+body > .sidebar .user-chip{ background:#fff; border-color:var(--gx-border); }
+body > .sidebar .user-chip .avatar{ background:var(--gx-red); color:#fff; }
+body > .sidebar .sidebar-footer .version{ color:var(--gx-muted); }
+body > .sidebar #tenant-select:focus{ outline:none; border-color:var(--gx-red); box-shadow:var(--gx-ring); }
+body > .mobile-toggle{ border-color:var(--gx-border); color:var(--gx-text); }
+
+/* ---------- Page header: white bar like Linalysis (was a blue gradient) ---------- */
+body > .main .page-header{ background:#fff; color:var(--gx-text); border-bottom:1px solid var(--gx-border); }
+body > .main .page-header h2{ color:var(--gx-text); font-weight:800; letter-spacing:-0.02em; }
+body > .main .page-header .header-sub{ color:var(--gx-muted); opacity:1; }
+body > .main .page-header .last-scan{ color:var(--gx-muted); opacity:1; }
+body > .main .refresh-btn,
+body > .main .page-header .btn-ghost-light{ background:var(--gx-red); border:1px solid var(--gx-red); color:#fff; font-weight:600; border-radius:8px; }
+body > .main .refresh-btn:hover,
+body > .main .page-header .btn-ghost-light:hover{ background:var(--gx-red-dark); border-color:var(--gx-red-dark); }
+
+/* ---------- Cards: white, 12px, 1px #e5e7eb border, flat ---------- */
+body > .main .message-list,
+body > .main .hot-leads,
+body > .main .donut-card,
+body > .main .analysis-card,
+body > .main .report-card,
+body > .main .settings-section,
+body > .main .progress-tracker,
+body > .main .dash-card,
+body > .main .dash-rail,
+body > .main .card{ border:1px solid var(--gx-border); border-radius:var(--gx-radius); box-shadow:var(--shadow); }
+body > .main .log-table{ box-shadow:0 0 0 1px var(--gx-border); }
+/* stat cards keep their 4px status stripe on the left */
+body > .main .stat-card{ border-top:1px solid var(--gx-border); border-right:1px solid var(--gx-border); border-bottom:1px solid var(--gx-border); border-radius:var(--gx-radius); box-shadow:var(--shadow); }
+body > .main .stat-card:not(.red):not(.orange):not(.green):not(.total){ border-left:1px solid var(--gx-border); }
+body > .main .stat-card.total{ border-left-color:var(--gx-text); }
+body > .main .stat-card.total .stat-number{ color:var(--gx-text); }
+body > .main .stat-card.accent .stat-number{ color:var(--gx-text); }   /* admin: "Clients" total */
+body > .main .stat-number, body > .main .kpi-num, body > .main .report-stat-num{ letter-spacing:-0.02em; }
+body > .main .dash-card-h h3, body > .main .analysis-card h3, body > .main .donut-card h3,
+body > .main .hot-leads-header h3, body > .main .progress-header h3, body > .main .report-header h3,
+body > .main .settings-section-header h3, body > .main .card-head h3{ color:var(--gx-text); font-weight:700; }
+
+/* ---------- Data areas: "total" series in neutral slate, not brand red ---------- */
+body > .main .kpi-strip,
+body > .main .dash-card,
+body > .main .analysis-card,
+body > .main .donut-card,
+body > .main .report-card,
+body > .main .progress-tracker,
+body > .main svg{ --accent:var(--gx-series); }
+body > .main svg rect[fill="#0077b5"]{ fill:var(--gx-series); }          /* campaign bars (JS literal) */
+.chart-tip .tip-key[style*="0077b5"],
+.chart-tip .tip-key[style*="rgb(0, 119, 181)"]{ background:var(--gx-series) !important; }
+body > .main .progress-stat-num.changed{ color:var(--gx-series); }
+body > .main .kpi:focus-visible{ outline-color:var(--gx-red); }
+body > .main .kpi-drill{ background:#f3f4f6; color:var(--gx-text); }
+body > .main .insight-box{ background:var(--gx-bg); border-left-color:var(--gx-border); }
+
+/* ---------- Dashboard filter rail ---------- */
+body > .main .seg{ background:#fff; border-color:var(--gx-border); }
+body > .main .seg-btn{ color:var(--gx-muted); }
+body > .main .seg-btn:hover{ color:var(--gx-red); }
+body > .main .seg-btn.active{ background:var(--gx-red); color:#fff; box-shadow:none; }
+body > .main .rail-select{ background:#fff; border-color:var(--gx-border); color:var(--gx-text); }
+body > .main .dash-chip{ background:var(--gx-red-light); color:var(--gx-red-dark); border-color:var(--gx-red-line); }
+
+/* ---------- Tabs / toggles: solid red when active ---------- */
+body > .main .filter-tabs{ border:1px solid var(--gx-border); }
+body > .main .filter-tab.active,
+body > .main .platform-tab.active,
+body > .main .campaign-toggle.active{ background:var(--gx-red); border-color:var(--gx-red); color:#fff; }
+body > .main .filter-tab:hover:not(.active),
+body > .main .platform-tab:hover:not(.active){ background:var(--gx-red-light); color:var(--gx-red); }
+body > .main .campaign-toggle:hover:not(.active){ border-color:var(--gx-red); color:var(--gx-red); }
+body > .main .platform-tab{ border-color:var(--gx-border); }
+
+/* ---------- Buttons ---------- */
+body > .main .run-diag-btn,
+body > .main .ext-btn:not(.secondary):not(.green),
+body > .main .btn-primary,
+body > .main .btn-accent{ background:var(--gx-red); border-color:var(--gx-red); color:#fff; border-radius:8px; }
+body > .main .run-diag-btn:hover,
+body > .main .ext-btn:not(.secondary):not(.green):hover:not(:disabled),
+body > .main .btn-primary:hover,
+body > .main .btn-accent:hover{ background:var(--gx-red-dark); border-color:var(--gx-red-dark); }
+body > .main .run-diag-btn:disabled,
+body > .main .ext-btn:disabled{ background:#c7c7cc; border-color:#c7c7cc; }
+body > .main .ext-btn.secondary,
+body > .main .btn:not(.btn-primary):not(.btn-accent):not(.btn-danger):not(.btn-ghost-light),
+body > .main .lib-btn:not(.danger){ background:#fff; border-color:var(--gx-border); color:var(--gx-text); }
+body > .main .ext-btn.secondary:hover:not(:disabled),
+body > .main .btn:not(.btn-primary):not(.btn-accent):not(.btn-danger):not(.btn-ghost-light):hover,
+body > .main .lib-btn:not(.danger):hover{ border-color:var(--gx-red); color:var(--gx-red); background:#fff; }
+body > .main input.btn:hover{ color:var(--gx-text); border-color:var(--gx-border); }   /* admin search box */
+
+/* Hot leads: rank badge + reply button */
+body > .main .hot-lead-rank{ background:var(--gx-red-light); color:var(--gx-red-dark); border:1px solid var(--gx-red-line); }
+body > .main .hot-lead-reply{ color:#fff; background:var(--gx-red); border-color:var(--gx-red); }
+body > .main .hot-lead-reply:hover{ background:var(--gx-red-dark); border-color:var(--gx-red-dark); }
+body > .main .hot-lead-reply--disabled,
+body > .main .hot-lead-reply--disabled:hover{ background:#fff; color:var(--gx-muted); border-color:var(--gx-border); }
+body > .main .hot-lead-item:hover,
+body > .main .message-item:hover{ background:var(--gx-bg); }
+
+/* LinkedIn links: outline chips in the neutral palette, red on hover (no leftover blue) */
+body > .main .hot-lead-profile,
+body > .main .msg-link-chip:not(.msg-link-chip--suggest),
+body > .main .sugg-open{ color:var(--gx-text); border-color:var(--gx-border); background:#fff; }
+body > .main .hot-lead-profile:hover,
+body > .main .msg-link-chip:not(.msg-link-chip--suggest):hover,
+body > .main .sugg-open:hover{ color:var(--gx-red); border-color:var(--gx-red); background:var(--gx-red-light); }
+body > .main .msg-name-link:hover,
+body > .main .lead-link:hover{ color:var(--gx-red); }
+body > .main .campaign-name{ color:var(--gx-text); }
+body > .main .campaign-table th:hover,
+body > .main .campaign-table th.sorted{ color:var(--gx-red); }
+body > .main .log-source{ background:#f3f4f6; color:var(--gx-text); }
+body > .main a:not(.btn):not(.nav-item):not(.msg-name-link):not(.lead-link):not(.lead-link-muted):not(.snippet-link):not(.msg-link-chip):not(.hot-lead-reply):not(.hot-lead-profile):not(.sugg-open):not(.ext-btn){ color:var(--gx-red-dark); }
+
+/* ---------- Inputs: red focus ring ---------- */
+body > .main input:focus, body > .main select:focus, body > .main textarea:focus{
+  outline:none; border-color:var(--gx-red); box-shadow:var(--gx-ring); }
+body > .main .sugg-text:focus{ outline:none; border-color:var(--gx-red); box-shadow:var(--gx-ring); }
+body > .main .search-box input,
+body > .main .sort-select, body > .main .filter-select{ border-color:var(--gx-border); }
+body > .main .radio-opt:hover{ border-color:var(--gx-red); }
+body > .main .radio-opt input[type="radio"]{ accent-color:var(--gx-red); }
+body > .main .radio-opt.checked{ border-color:var(--gx-red); background:var(--gx-red-light); box-shadow:inset 0 0 0 1px var(--gx-red); }
+body > .main .spinner{ border-top-color:var(--gx-red); }
+
+/* ---------- Tables ---------- */
+body > .main .log-table th,
+body > .main table.grid th{ background:var(--gx-bg); color:var(--gx-muted); border-bottom-color:var(--gx-border); }
+body > .main .log-table tr:hover td,
+body > .main .campaign-table tr:hover td,
+body > .main table.grid tbody tr:hover{ background:var(--gx-bg); }
+
+/* ---------- Status chips: alerts keep tint + border so they never look like brand ---------- */
+body > .main .msg-tag.red,
+body > .main .log-count.red,
+body > .main .diag-badge.error,
+body > .main .transition-from.Red,
+body > .main .transition-to.Red{ box-shadow:inset 0 0 0 1px var(--red-border,#fecaca); }
+body > .main .msg-tag.orange,
+body > .main .log-count.orange,
+body > .main .diag-badge.warn,
+body > .main .transition-from.Orange,
+body > .main .transition-to.Orange{ box-shadow:inset 0 0 0 1px var(--orange-border,#fde68a); }
+body > .main .msg-tag.green,
+body > .main .log-count.green,
+body > .main .diag-badge.ok,
+body > .main .transition-from.Green,
+body > .main .transition-to.Green{ box-shadow:inset 0 0 0 1px var(--green-border,#bbf7d0); }
+
+/* ---------- Mobile ---------- */
+/* .main is a flex child of body: without min-width:0 the dashboard grids pushed it
+   to ~550px on a 390px phone (pre-existing horizontal scroll) */
+body > .main{ min-width:0; }
+/* admin: the closed (off-canvas) drawer's shadow leaked a grey band on the right edge */
+body > .drawer:not(.open){ box-shadow:none; }
+@media (max-width:700px){
+  body > .main .progress-stats{ grid-template-columns:repeat(2,1fr); }
+  body > .main .dash-rail{ gap:12px; }
+}
+@media (max-width:900px){
+  body > .main .page-header{ padding-left:64px; }
+  body > .sidebar.open{ box-shadow:0 10px 40px rgba(29,29,31,.12); }
+  body > .sidebar .sidebar-brand{ padding-left:64px; }   /* clear of the fixed ☰ button */
+}
+
+/* =====================================================================
+   LANDING PAGE (index.html) - light hero, red accents, like linalysis.ai
+   ===================================================================== */
+body > header{ background:rgba(255,255,255,.9); border-bottom-color:var(--gx-border); }
+body > header .brand{ color:var(--gx-text); }
+body > header .brand .dot,
+footer .brand .dot{ background:var(--gx-red); box-shadow:none; }
+body > header .brand small{ color:var(--gx-muted); }
+body > header .nav-links a.link{ color:var(--gx-text); }
+body > header .nav-links a.link:hover{ color:var(--gx-red); }
+body > header .btn-primary,
+section .btn-primary{ background:var(--gx-red); box-shadow:none; color:#fff; border-radius:999px; }
+body > header .btn-primary:hover,
+section .btn-primary:hover{ background:var(--gx-red-dark); box-shadow:0 8px 22px rgba(204,51,51,.28); }
+
+section.hero{ background:linear-gradient(180deg,#ffffff 0%,var(--gx-bg) 60%,var(--gx-red-light) 100%); color:var(--gx-text); }
+section.hero h1{ color:var(--gx-text); }
+section.hero h1 .g{ background:none; -webkit-background-clip:border-box; background-clip:border-box; color:var(--gx-red); }
+section.hero p.sub{ color:var(--gx-muted); }
+section.hero .kicker{ color:var(--gx-red); background:var(--gx-red-light); border-color:var(--gx-red-line); font-weight:700; }
+section.hero .trust{ color:var(--gx-muted); }
+section.hero .btn-lite{ background:#fff; border-color:var(--gx-border); color:var(--gx-text); border-radius:999px; }
+section.hero .btn-lite:hover{ border-color:var(--gx-red); color:var(--gx-red); background:#fff; }
+section.hero .glowring{ background:radial-gradient(circle,rgba(204,51,51,.10),transparent 62%); }
+section.hero .ecg{ opacity:.28; }
+#pg stop:nth-child(1){ stop-color:#a8281f; }
+#pg stop:nth-child(2){ stop-color:#CC3333; }
+#pg stop:nth-child(3){ stop-color:#f08a8a; }
+section.hero .mock{ background:#fff; border-color:var(--gx-border); box-shadow:0 30px 80px rgba(29,29,31,.10); }
+section.hero .mock .bar{ background:var(--gx-bg); border-bottom-color:var(--gx-border); }
+section.hero .mock .bar i{ background:#d9d9de; }
+section.hero .mock .bar .u{ color:var(--gx-muted); }
+/* triage stages keep their Red / Orange / Green stripe + dots; white cards */
+section.hero .stage{ background:#fff; border-color:var(--gx-border); border-radius:var(--gx-radius); }
+section.hero .stage h4{ color:var(--gx-muted); }
+section.hero .stage.r h4{ color:#b91c1c; }
+section.hero .stage.o h4{ color:#b45309; }
+section.hero .stage.g h4{ color:#15803d; }
+section.hero .stage .big{ color:var(--gx-text); }
+section.hero .stage .lbl, section.hero .stage ul{ color:var(--gx-muted); }
+
+body > .wrap > .stats{ border-color:var(--gx-border); background:var(--gx-border); border-radius:var(--gx-radius); box-shadow:0 18px 50px rgba(29,29,31,.06); }
+body > .wrap > .stats .stat b{ color:var(--gx-text); }
+body > .wrap > .stats .stat span{ color:var(--gx-muted); }
+section.pad .eyebrow, section.pad .signincard .tag{ color:var(--gx-red); }
+section.pad h2.sec, section.pad .why h2{ color:var(--gx-text); }
+section.pad .card{ border-color:var(--gx-border); border-radius:var(--gx-radius); }
+section.pad .card:hover{ border-color:var(--gx-red-line); box-shadow:0 12px 30px rgba(29,29,31,.07); }
+section.pad .card .ic{ background:var(--gx-red-light); border-color:var(--gx-red-line); }
+section.pad .step{ background:#fff; border-color:var(--gx-border); border-radius:var(--gx-radius); }
+section.pad .step .n{ background:var(--gx-red); box-shadow:none; border-radius:999px; }
+section.band{ background:var(--gx-bg); border-color:var(--gx-border); }
+section.pad .signincard{ border-color:var(--gx-border); border-radius:var(--gx-radius); box-shadow:0 18px 50px rgba(29,29,31,.08); }
+
+/* Final call-to-action: solid red band like Linalysis' cta-section */
+section.final{ background:linear-gradient(135deg,var(--gx-red) 0%,var(--gx-red-dark) 100%); }
+section.final p{ color:rgba(255,255,255,.9); }
+section.final .btn-primary{ background:#fff; color:var(--gx-red); }
+section.final .btn-primary:hover{ background:var(--gx-red-light); color:var(--gx-red-dark); }
+section.final .btn-lite{ border-radius:999px; border-color:rgba(255,255,255,.5); }
+
+footer{ background:#1d1d1f; }
+footer .brand small{ color:#a1a1a6; }
