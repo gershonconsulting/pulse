@@ -219,7 +219,7 @@ export function analyseEstate(rows, win) {
 // ═════════════════════════════════════════════════════════════════════════
 //  HTML EMAIL (table-based, inline styles — renders in Gmail/Outlook)
 // ═════════════════════════════════════════════════════════════════════════
-const C = { ink: '#0f172a', mut: '#64748b', rule: '#e2e8f0', tint: '#f8fafc', acc: '#0077b5', red: '#dc2626', org: '#d97706', grn: '#16a34a', grnBg: '#f0fdf4', redBg: '#fef2f2', orgBg: '#fffbeb' };
+const C = { ink: '#0f172a', mut: '#64748b', rule: '#e2e8f0', tint: '#f8fafc', acc: '#FE1B04', red: '#dc2626', org: '#d97706', grn: '#16a34a', grnBg: '#f0fdf4', redBg: '#fef2f2', orgBg: '#fffbeb' };
 const TONE = { good: [C.grnBg, '#166534', C.grn], bad: [C.redBg, '#991b1b', C.red], warn: [C.orgBg, '#92400e', C.org], neutral: ['#f1f5f9', '#334155', C.mut] };
 const h = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const F = 'font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;';
@@ -266,8 +266,8 @@ ${header}${body}
 }
 function eHeader(sub, right, rightSmall) {
   return `<tr><td style="background:${C.ink};padding:20px 28px;${F}"><table width="100%" cellpadding="0" cellspacing="0"><tr>
-  <td style="${F}"><div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:1px;"><span style="color:#38bdf8;">&#9679;</span> PULSE</div><div style="font-size:12.5px;color:#cbd5e1;margin-top:3px;">${sub}</div></td>
-  <td align="right" style="${F}"><div style="font-size:18px;font-weight:800;color:#38bdf8;">${right}</div><div style="font-size:11px;color:#94a3b8;margin-top:3px;">${rightSmall}</div></td></tr></table></td></tr>`;
+  <td style="${F}"><div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:1px;"><span style="color:#FE1B04;">&#9679;</span> PULSE</div><div style="font-size:12.5px;color:#cbd5e1;margin-top:3px;">${sub}</div></td>
+  <td align="right" style="${F}"><div style="font-size:18px;font-weight:800;color:#FE1B04;">${right}</div><div style="font-size:11px;color:#94a3b8;margin-top:3px;">${rightSmall}</div></td></tr></table></td></tr>`;
 }
 function eVerdict(v) {
   const t = TONE[v.tone] || TONE.neutral;
@@ -362,7 +362,7 @@ export function renderEstateEmail(e, o = {}) {
 // ═════════════════════════════════════════════════════════════════════════
 const PW = 612, PH = 792, M = 40, CW = PW - 2 * M;
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-const K = { ink: rgb('#0f172a'), mut: rgb('#64748b'), rule: rgb('#e2e8f0'), tint: rgb('#f8fafc'), acc: rgb('#0077b5'), sky: rgb('#38bdf8'),
+const K = { ink: rgb('#0f172a'), mut: rgb('#64748b'), rule: rgb('#e2e8f0'), tint: rgb('#f8fafc'), acc: rgb('#FE1B04'), sky: rgb('#FE1B04'),
   red: rgb('#dc2626'), org: rgb('#f59e0b'), orgD: rgb('#b45309'), grn: rgb('#16a34a'), grnB: rgb('#f0fdf4'), grnD: rgb('#166534'), redB: rgb('#fef2f2'), redD: rgb('#991b1b'),
   orgB: rgb('#fff7ed'), white: [1, 1, 1], bar: rgb('#e8edf2'), purple: rgb('#7c3aed'), sl: rgb('#cbd5e1') };
 const PT = { good: [K.grnB, K.grnD, K.grn], bad: [K.redB, K.redD, K.red], warn: [K.orgB, K.orgD, K.org], neutral: [K.tint, K.ink, K.mut] };
