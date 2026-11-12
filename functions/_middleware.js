@@ -215,10 +215,10 @@ async function gate(context) {
   return new Response(null, { status: 302, headers: { Location: home.toString(), 'Cache-Control': 'no-store' } });
 }
 
-// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────
+// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────────────────────
 // Decision 2026-10-13: every Gershon app looks like Linalysis (the master design:
 // white 240px sidebar, solid-red active pill, white 12px cards) in the Gershon.ai red
-// #CC3333. app/unified-theme.css (served at /unified-theme.css, public like every .css)
+// #FE1B04. app/unified-theme.css (served at /unified-theme.css, public like every .css)
 // re-skins Pulse; this step links it into the landing page, the dashboard and /admin
 // on the fly, so the 244 KB app.html is never re-uploaded. Same pattern as Radar.
 //   - Inserted once, before </head>, and only if the page does not already reference
@@ -234,13 +234,13 @@ async function gate(context) {
 // </head>) to the dashboard - fixed "Open in Sales Nav" links, the rebuilt Reports
 // page and the collapsed Settings > Advanced group. Each is inserted once, only if
 // the page does not already reference it.
-const APP_VERSION = '5.15.0';
+const APP_VERSION = '5.15.1';
 const THEME_HREF = '/unified-theme.css?v=' + APP_VERSION;
 const ENHANCE_SRC = '/pulse-enhance.js?v=' + APP_VERSION;
 const ENHANCE_CSS = '/pulse-enhance.css?v=' + APP_VERSION;
 const THEMED_PAGES = new Set(['/', '/index.html', '/app', '/app.html', '/admin', '/admin.html']);
 const DASHBOARD_PAGES = new Set(['/app', '/app.html']);
-const FAVICON_SWAP = ["fill='%230077b5'", "fill='%23CC3333'"];
+const FAVICON_SWAP = ["fill='%230077b5'", "fill='%23FE1B04'"];
 
 function cmpVer(a, b) {
   const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);

@@ -162,6 +162,12 @@ Secrets       : 1Password. Never commit them.
   -> Verify v5.9.1 live at pulse.gershoncrm.com/app: on a viewer
      computer, 'Last sync' must show a real timestamp, not 'None'.
      Then chase the LinkedIn OpenID Connect approval.
+- ✅ 2026-11-11 brand red #FE1B04 (nightly) — ready to test after merge
+  Pulse v5.15.1: theme tokens (unified-theme.css), gradients, focus rings and the favicon swap now use #FE1B04
+  (dark #d11200, tint #fff5f5) instead of #CC3333. Triage red/orange/green and chart series colours untouched.
+  ❌ Still LinkedIn blue #0077b5 (not migrated): e-mail templates in functions/api/{daily-report,weekly-status,
+     report,health-check}.js, the monthly PDF/e-mail accent in functions/_monthly-core.js, and the Chrome
+     extension popup (needs Charles/CWS release).
 
 8. GOTCHAS / HARD-WON LESSONS
 ----------------------------------------------------------------

@@ -1,7 +1,7 @@
 /* =====================================================================
    Pulse - unified Gershon design (v5.14.0, 2026-10-22)
    Decision 2026-10-13: every Gershon app looks like Linalysis (the master
-   design) and the main colour everywhere is the Gershon.ai red #CC3333.
+   design) and the main colour everywhere is the Gershon.ai red #FE1B04.
    This file re-skins Pulse without touching the 244 KB app.html: it is
    linked into /, /app.html and /admin by functions/_middleware.js
    (themeInject), the same way Radar's unified-theme.css is.
@@ -23,10 +23,10 @@
 
 /* ---------- Tokens (html:root beats the page's own :root) ---------- */
 html:root{
-  --gx-red:#CC3333; --gx-red-dark:#a8281f; --gx-red-light:#fdf2f2; --gx-red-line:#f3caca;
+  --gx-red:#FE1B04; --gx-red-dark:#d11200; --gx-red-light:#fff5f5; --gx-red-line:#ffd2cd;
   --gx-text:#1d1d1f; --gx-muted:#6e6e73; --gx-border:#e5e7eb; --gx-bg:#fafafa; --gx-radius:12px;
   --gx-series:#475569;           /* neutral data colour for "total" series */
-  --gx-ring:0 0 0 3px rgba(204,51,51,.15);
+  --gx-ring:0 0 0 3px rgba(254,27,4,.15);
 
   /* app.html + admin.html tokens (status tokens --red/--orange/--green untouched) */
   --accent:var(--gx-red); --accent-dark:var(--gx-red-dark);
@@ -35,8 +35,8 @@ html:root{
   --radius:var(--gx-radius); --shadow:0 1px 2px rgba(16,24,40,.04);
 
   /* landing-page tokens (index.html) */
-  --brand:var(--gx-red); --brand-ink:var(--gx-red-dark); --brand2:#f08a8a;
-  --grad:linear-gradient(120deg,#CC3333 0%,#a8281f 100%);
+  --brand:var(--gx-red); --brand-ink:var(--gx-red-dark); --brand2:#ff7a6b;
+  --grad:linear-gradient(120deg,#FE1B04 0%,#d11200 100%);
   --line:var(--gx-border); --soft:var(--gx-bg);
 }
 html body{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif; }
@@ -241,7 +241,7 @@ body > header .nav-links a.link:hover{ color:var(--gx-red); }
 body > header .btn-primary,
 section .btn-primary{ background:var(--gx-red); box-shadow:none; color:#fff; border-radius:999px; }
 body > header .btn-primary:hover,
-section .btn-primary:hover{ background:var(--gx-red-dark); box-shadow:0 8px 22px rgba(204,51,51,.28); }
+section .btn-primary:hover{ background:var(--gx-red-dark); box-shadow:0 8px 22px rgba(254,27,4,.28); }
 
 section.hero{ background:linear-gradient(180deg,#ffffff 0%,var(--gx-bg) 60%,var(--gx-red-light) 100%); color:var(--gx-text); }
 section.hero h1{ color:var(--gx-text); }
@@ -251,11 +251,11 @@ section.hero .kicker{ color:var(--gx-red); background:var(--gx-red-light); borde
 section.hero .trust{ color:var(--gx-muted); }
 section.hero .btn-lite{ background:#fff; border-color:var(--gx-border); color:var(--gx-text); border-radius:999px; }
 section.hero .btn-lite:hover{ border-color:var(--gx-red); color:var(--gx-red); background:#fff; }
-section.hero .glowring{ background:radial-gradient(circle,rgba(204,51,51,.10),transparent 62%); }
+section.hero .glowring{ background:radial-gradient(circle,rgba(254,27,4,.10),transparent 62%); }
 section.hero .ecg{ opacity:.28; }
-#pg stop:nth-child(1){ stop-color:#a8281f; }
-#pg stop:nth-child(2){ stop-color:#CC3333; }
-#pg stop:nth-child(3){ stop-color:#f08a8a; }
+#pg stop:nth-child(1){ stop-color:#d11200; }
+#pg stop:nth-child(2){ stop-color:#FE1B04; }
+#pg stop:nth-child(3){ stop-color:#ff7a6b; }
 section.hero .mock{ background:#fff; border-color:var(--gx-border); box-shadow:0 30px 80px rgba(29,29,31,.10); }
 section.hero .mock .bar{ background:var(--gx-bg); border-bottom-color:var(--gx-border); }
 section.hero .mock .bar i{ background:#d9d9de; }
