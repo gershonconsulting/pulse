@@ -165,6 +165,7 @@ async function gate(context) {
     }
 
     let viewingAs = null;
+    const ownClientId = clientId;
     if (isAdmin || cohost) {
       const wanted = String(parseCookies(request.headers.get('Cookie'))[VIEW_COOKIE] || '').trim();
       if (wanted === VIEW_DEFAULT) {
@@ -183,6 +184,14 @@ async function gate(context) {
         // A CoHost has no tenant of their own; with nothing selected they land on the
         // default store, and the dashboard's switcher says so in as many words.
         clientId = null;
+      }
+      // Picking your OWN tenant in the switcher is not "viewing someone else".
+      // Without this, a super-admin who selected the default (Gershon) account was
+      // flagged viewingAs='admin', /api/my-token answered 403 not-your-tenant, and the
+      // collector never got its token — so nothing synced (2026-11-12). A CoHost has
+      // no tenant of their own (ownClientId null, not admin), so stays flagged.
+      if (viewingAs && clientId === ownClientId && (isAdmin || ownClientId)) {
+        viewingAs = null;
       }
     }
 
