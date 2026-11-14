@@ -192,3 +192,5 @@ Report mailbox - report@gershonconsulting.com
 ================================================================
 END OF HANDOFF
 ================================================================
+
+2026-11-11 wave 4 (nightly): Chrome extension popup (linkedin-pulse-extension/popup.html) LinkedIn blue #0077b5/#005885 -> brand red #FE1B04/#d11200; manifest 1.5.0 -> 1.5.1. Branch nightly/2026-11-11-pulse-extension-red. ❌ merge + Chrome Web Store release (Ariel/Charles). No permissions or code changed.
