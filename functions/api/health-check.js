@@ -103,7 +103,7 @@ async function handle(request, env) {
         Open Chrome, sign in to LinkedIn, then run <strong>Sync Now</strong> from the extension
         or from the dashboard&rsquo;s Extension page. This alert repeats at most every ${realertHours} hours.
       </p>
-      <a href="https://pulse.gershoncrm.com/app.html" style="display:inline-block;background:#0077b5;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;">Open Pulse Dashboard</a>
+      <a href="https://pulse.gershoncrm.com/app.html" style="display:inline-block;background:#FE1B04;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;">Open Pulse Dashboard</a>
     </div>
   </div>
 </body></html>`;

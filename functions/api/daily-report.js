@@ -695,7 +695,7 @@ function campaignBlock(r) {
     : `<div style="background:#f3f4f6;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#374151;">Every campaign is under ${c.minN} contacts, which is too small for a reply rate to mean anything. Ranking starts once one crosses ${c.minN}.</div>`;
 
   const rows = c.all.map((x) => `<tr${x.ranked ? '' : ' style="opacity:.55;"'}>
-      <td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;font-weight:700;color:#0077b5;">${esc(x.name)}${x === c.best ? ' &#127942;' : ''}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;font-weight:700;color:#d11200;">${esc(x.name)}${x === c.best ? ' &#127942;' : ''}</td>
       <td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;text-align:right;color:#374151;">${x.total}</td>
       <td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;text-align:right;color:#374151;">${x.replied}</td>
       <td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;text-align:right;font-weight:700;color:${x.ranked ? '#111827' : '#9ca3af'};">${x.ranked ? x.responseRate + '%' : '&mdash;'}</td>
@@ -817,14 +817,14 @@ export function renderEmail(r) {
 <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:640px;margin:0 auto;padding:20px;">
 
-    <div style="background:linear-gradient(135deg,#0077b5,#005885);color:#ffffff;padding:22px 24px;border-radius:12px 12px 0 0;">
+    <div style="background:linear-gradient(135deg,#FE1B04,#d11200);color:#ffffff;padding:22px 24px;border-radius:12px 12px 0 0;">
       <h1 style="margin:0;font-size:22px;font-weight:700;">${isWeek ? 'Pulse Weekly Review' : 'Pulse Daily Report'}</h1>
       <p style="margin:5px 0 0;opacity:.85;font-size:14px;">${isWeek ? esc(r.week.label) + ' &middot; week ending ' + esc(r.dayLabel) : esc(r.dayLabel)}</p>
     </div>
 
     ${alertBlocks}
 
-    ${section('At a glance', glanceBlock(r), '#0077b5')}
+    ${section('At a glance', glanceBlock(r), '#FE1B04')}
 
     <div style="background:${v.bg};padding:18px 20px;border-bottom:1px solid #e5e7eb;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:${v.accent};font-weight:700;">Did we make progress?</div>
@@ -832,7 +832,7 @@ export function renderEmail(r) {
       <div style="margin-top:5px;font-size:14px;color:${v.fg};opacity:.85;line-height:1.5;">${esc(r.verdict.detail)}</div>
     </div>
 
-    ${isWeek ? section('The week &mdash; and the week before', weekBlock(r), '#0077b5') : ''}
+    ${isWeek ? section('The week &mdash; and the week before', weekBlock(r), '#FE1B04') : ''}
 
     ${section(isWeek ? 'Final day movement' : 'Yesterday&rsquo;s movement', scorecard)}
 
@@ -856,7 +856,7 @@ export function renderEmail(r) {
         </tr>${trendRows}
       </table>${r.trendNote ? `<p style="margin:9px 0 0;font-size:12px;color:#9ca3af;">${esc(r.trendNote)}</p>` : ''}`)}
 
-    ${isWeek ? '' : section('Since last week', weekBlock(r), '#0077b5')}
+    ${isWeek ? '' : section('Since last week', weekBlock(r), '#FE1B04')}
 
     ${section('Campaign performance', campaignBlock(r), '#7c3aed')}
 
@@ -867,7 +867,7 @@ export function renderEmail(r) {
     ${r.standing.followUps.length ? section(`Needs follow-up today (${r.standing.followUpNeeded} total${r.standing.starred ? `, ${r.standing.starred} starred` : ''})`, `<table width="100%" style="border-collapse:collapse;">${followRows}</table>${r.standing.followUpNeeded > r.standing.followUps.length ? `<p style="margin:10px 0 0;font-size:12px;color:#9ca3af;">+ ${r.standing.followUpNeeded - r.standing.followUps.length} more on the dashboard</p>` : ''}`, '#991b1b') : ''}
 
     <div style="background:#ffffff;padding:18px 20px;border-radius:0 0 12px 12px;text-align:center;">
-      <a href="https://pulse.gershoncrm.com/app.html" style="display:inline-block;background:#0077b5;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;">Open Pulse Dashboard</a>
+      <a href="https://pulse.gershoncrm.com/app.html" style="display:inline-block;background:#FE1B04;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;">Open Pulse Dashboard</a>
       <p style="margin:12px 0 0;font-size:11px;color:#9ca3af;line-height:1.6;">
         Tracking ${r.standing.totalTracked} conversations &middot; last sync ${esc(fmtTime(r.lastScan && r.lastScan.timestamp, tz))}<br>
         Times in ${esc(tz)} &middot; generated ${esc(fmtTime(r.generatedAt, tz))}

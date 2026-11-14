@@ -228,7 +228,7 @@ function generateEmailHtml(report) {
 <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:20px;">
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,#0077b5,#005885);color:white;padding:24px;border-radius:12px 12px 0 0;">
+    <div style="background:linear-gradient(135deg,#FE1B04,#d11200);color:white;padding:24px;border-radius:12px 12px 0 0;">
       <h1 style="margin:0;font-size:24px;">Pulse LinkedIn Report</h1>
       <p style="margin:4px 0 0;opacity:0.85;font-size:14px;">${dateRange}</p>
     </div>
@@ -298,7 +298,7 @@ function generateEmailHtml(report) {
 
     <!-- Footer -->
     <div style="background:white;padding:16px 20px;border-radius:0 0 12px 12px;text-align:center;">
-      <a href="https://pulse.gershoncrm.com" style="color:#0077b5;text-decoration:none;font-weight:600;font-size:14px;">
+      <a href="https://pulse.gershoncrm.com" style="color:#d11200;text-decoration:none;font-weight:600;font-size:14px;">
         Open Pulse Dashboard →
       </a>
       <p style="margin:8px 0 0;font-size:11px;color:#9ca3af;">

@@ -50,6 +50,7 @@ Secrets       : 1Password. Never commit them.
 
 3. RECENTLY DONE  [DONE]
 ----------------------------------------------------------------
+2026-11-11 wave 3: email templates (daily-report, weekly-status, health-check, report, monthly) LinkedIn blue #0077b5 -> brand red #FE1B04 / dark #d11200 (text links). Semantic red/green/amber and the extension untouched. No version bump; merge after #6. node --check ok; no test suite in repo.
 - 2026-11-02: POST /api/matrix-stats added (read-only Client Platform Matrix probe, hashed secret, same contract as Linalysis; matches emails via client registry/ALLOWLIST).
 - 2026-11-04: PR #1 (unified design, v5.14.0) and PR #2 (Sales Nav links,
   Reports page, v5.15.0) rebuilt as ONE PR on current main (v5.13.1) on branch

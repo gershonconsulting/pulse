@@ -310,7 +310,7 @@ export function renderStatusEmail(s) {
 
   const boardRows = s.board.map((c) => `<tr${c.ranked ? '' : ' style="opacity:.55;"'}>
       <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#6b7280;">${esc(c.client)}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;font-weight:700;color:#0077b5;">${esc(c.name)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;font-weight:700;color:#d11200;">${esc(c.name)}</td>
       <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;text-align:right;color:#374151;">${c.total}</td>
       <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;text-align:right;color:#374151;">${c.replied}</td>
       <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;text-align:right;font-weight:700;color:${c.ranked ? '#111827' : '#9ca3af'};">${c.ranked ? c.responseRate + '%' : '&mdash;'}</td>
@@ -320,7 +320,7 @@ export function renderStatusEmail(s) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="max-width:720px;margin:0 auto;background:#ffffff;">
 
-    <div style="background:#0077b5;padding:22px 20px;">
+    <div style="background:#FE1B04;padding:22px 20px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#cfe8f5;font-weight:700;">Gershon Consulting &middot; Internal</div>
       <h1 style="margin:4px 0 0;font-size:21px;color:#ffffff;font-weight:700;">Pulse Weekly Status &mdash; all accounts</h1>
       <div style="margin-top:4px;font-size:13px;color:#cfe8f5;">${esc(s.rangeLabel)} &middot; ${s.totals.active} active account${s.totals.active === 1 ? '' : 's'}, ${s.totals.seats} user${s.totals.seats === 1 ? '' : 's'}</div>
@@ -397,7 +397,7 @@ export function renderStatusEmail(s) {
     </div>` : ''}
 
     <div style="background:#f8f9fa;padding:16px 20px;text-align:center;">
-      <a href="https://pulse.gershoncrm.com/admin.html" style="display:inline-block;background:#0077b5;color:#ffffff;text-decoration:none;padding:9px 18px;border-radius:6px;font-size:13px;font-weight:600;">Open the Pulse console</a>
+      <a href="https://pulse.gershoncrm.com/admin.html" style="display:inline-block;background:#FE1B04;color:#ffffff;text-decoration:none;padding:9px 18px;border-radius:6px;font-size:13px;font-weight:600;">Open the Pulse console</a>
       <div style="margin-top:10px;font-size:11px;color:#9ca3af;line-height:1.6;">
         Generated ${esc(fmtWhen(s.generatedAt, s.tz))} (${esc(s.tz)}) by pulse.gershoncrm.com &middot; internal report, not sent to any client.
       </div>
