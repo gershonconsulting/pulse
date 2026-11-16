@@ -343,7 +343,7 @@
         '<strong>Your free trial has ended.</strong> The account' + who +
         ' collected for 14 days. To keep going, email ' +
         '<a href="mailto:support@gershonconsulting.com?subject=Pulse%20subscription" style="color:inherit;font-weight:700">support@gershonconsulting.com</a>' +
-        ' \u2014 your conversations are still here, nothing was deleted.'
+        ' — your conversations are still here, nothing was deleted.'
       );
     } else if (reason === 'cohost-revoked') {
       showDeny(
@@ -391,7 +391,7 @@
   var skipAuto = params.get('denied') || params.get('error') || params.get('signedout');
   if (!skipAuto && typeof window.fetch === 'function') {
     try {
-      window.fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
+      window.fetch('/api/me?soft=1', { credentials: 'same-origin', cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (me) { if (me && me.ok) window.location.replace('/app.html'); })
         .catch(function () {});
