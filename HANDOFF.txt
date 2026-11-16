@@ -168,6 +168,7 @@ Secrets       : 1Password. Never commit them.
   ❌ Still LinkedIn blue #0077b5 (not migrated): e-mail templates in functions/api/{daily-report,weekly-status,
      report,health-check}.js, the monthly PDF/e-mail accent in functions/_monthly-core.js, and the Chrome
      extension popup (needs Charles/CWS release).
+- ✅ 2026-11-16 Pulse v5.15.2 (nightly): signed-out homepage no longer logs a red 401 console error. Cause: app/index.html probed GET /api/me. Now probes /api/me?soft=1, which answers 200 {ok:false} when signed out; plain /api/me (dashboard, admin) still returns 401. Signed-in redirect unchanged. Branch nightly/2026-11-16-pulse-signedout-401. ❌ merge (deploys from main); then re-check pulse.gershoncrm.com console.
 
 8. GOTCHAS / HARD-WON LESSONS
 ----------------------------------------------------------------
