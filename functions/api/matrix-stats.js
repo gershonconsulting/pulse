@@ -13,7 +13,14 @@
 //   3. super-admin (ADMIN_EMAILS) or active CoHost with no tenant of their own
 //                                                 -> "admin only" / "cohost only" (ok:false)
 //   otherwise "no account". With several emails, the one with the most conversations wins.
-// Note: "<red> red of <total>" when follow-ups are awaiting, else "<total> convos";
+//
+// Note = COLLECTION FRESHNESS (Olivier, 2026-11-16: "Pulse orange is when we have not
+// collected for more than 2 days. Not linked to the number of pending messages."):
+//   last scan within 48h -> "<total> convos"        (green)
+//   last scan older      -> "no scan for <n>d"      (orange on the matrix)
+//   no scan on record    -> "never scanned"         (orange on the matrix)
+// The matrix turns a cell orange when the note matches /never|no scan|0 collected|red/,
+// so the note must NEVER mention the count of red (unanswered) conversations.
 // "no data" for an account with an empty store; "suspended" for a suspended client.
 // Read-only: this file only calls KV.get (via readAdminStore / readData).
 
@@ -23,6 +30,7 @@ import { readAdminStore, findCohostByEmail, isAdminEmail } from '../_admin.js';
 const SECRET_HASH = '7031a38bde30c34db677585e85f696f51d78cc417e40d38572d20ebeb1c77569';
 const MAX_PEOPLE = 500;
 const MAX_EMAILS = 10;
+const STALE_HOURS = 48; // orange past 2 days without a collection
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
   status,
@@ -38,10 +46,27 @@ function envList(value) {
   return String(value || '').toLowerCase().split(',').map(s => s.trim()).filter(s => s && s !== '*');
 }
 
+// Newest scan timestamp in the store (ms), 0 when none is on record.
+function lastScanMs(data) {
+  const scans = Array.isArray(data && data.scans) ? data.scans : [];
+  let last = 0;
+  for (const s of scans) {
+    const t = Date.parse(s && s.timestamp);
+    if (Number.isFinite(t) && t > last) last = t;
+  }
+  return last;
+}
+
 function countStore(data) {
   const msgs = Array.isArray(data && data.messages) ? data.messages : [];
-  const red = msgs.filter(m => m && m.status === 'Red' && !m.done).length;
-  return { total: msgs.length, red };
+  const last = lastScanMs(data);
+  return { total: msgs.length, ageHours: last ? (Date.now() - last) / 3600000 : null };
+}
+
+function freshnessNote({ total, ageHours }) {
+  if (ageHours === null) return 'never scanned';
+  if (ageHours > STALE_HOURS) return `no scan for ${Math.floor(ageHours / 24)}d`;
+  return `${total} convos`;
 }
 
 // Resolve one email to { rank, ok, note, total }. Higher rank = more informative.
@@ -59,10 +84,11 @@ async function resolveEmail(env, store, allow, cache, email) {
   if (tenant !== undefined) {
     const k = tenant || '__default';
     if (!cache.has(k)) cache.set(k, countStore(await readData(env.PULSE_KV, tenant)));
-    const { total, red } = cache.get(k);
+    const stats = cache.get(k);
+    const { total } = stats;
     if (suspended) return { rank: 2, ok: false, note: 'suspended', total };
     if (!total) return { rank: 2, ok: false, note: 'no data', total: 0 };
-    return { rank: 3, ok: true, note: red ? `${red} red of ${total}` : `${total} convos`, total };
+    return { rank: 3, ok: true, note: freshnessNote(stats), total };
   }
   if (isAdminEmail(email, env)) return { rank: 1, ok: false, note: 'admin only', total: 0 };
   if (findCohostByEmail(store, email)) return { rank: 1, ok: false, note: 'cohost only', total: 0 };
