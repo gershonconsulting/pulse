@@ -11,8 +11,14 @@ const NO_STORE = { 'Content-Type': 'application/json', 'Cache-Control': 'no-stor
 export async function onRequestGet({ request, env }) {
   const session = await getSession(request, env);
 
+  // ?soft=1 (used by the signed-out marketing homepage's "already signed in?" probe):
+  // answer 200 {ok:false} instead of 401, so the browser logs no red console error.
+  // The dashboard calls /api/me without it and still gets 401.
+  const soft = new URL(request.url).searchParams.get('soft') === '1';
+  const SIGNED_OUT = soft ? 200 : 401;
+
   if (!session) {
-    return new Response(JSON.stringify({ ok: false }), { status: 401, headers: NO_STORE });
+    return new Response(JSON.stringify({ ok: false }), { status: SIGNED_OUT, headers: NO_STORE });
   }
 
   // Revocation: removing someone from the client registry (or suspending their client,
@@ -21,7 +27,7 @@ export async function onRequestGet({ request, env }) {
   const access = await resolveAccess(session.email, env);
   if (!access.allowed) {
     return new Response(JSON.stringify({ ok: false, error: 'revoked', reason: access.reason }), {
-      status: 401,
+      status: SIGNED_OUT,
       headers: Object.assign({ 'Set-Cookie': clearCookie(COOKIE_NAME) }, NO_STORE),
     });
   }
