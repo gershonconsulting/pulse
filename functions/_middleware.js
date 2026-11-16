@@ -224,7 +224,7 @@ async function gate(context) {
   return new Response(null, { status: 302, headers: { Location: home.toString(), 'Cache-Control': 'no-store' } });
 }
 
-// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────────────────────
+// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────────────────────────────────────────────
 // Decision 2026-10-13: every Gershon app looks like Linalysis (the master design:
 // white 240px sidebar, solid-red active pill, white 12px cards) in the Gershon.ai red
 // #FE1B04. app/unified-theme.css (served at /unified-theme.css, public like every .css)
@@ -243,7 +243,7 @@ async function gate(context) {
 // </head>) to the dashboard - fixed "Open in Sales Nav" links, the rebuilt Reports
 // page and the collapsed Settings > Advanced group. Each is inserted once, only if
 // the page does not already reference it.
-const APP_VERSION = '5.15.1';
+const APP_VERSION = '5.15.2';
 const THEME_HREF = '/unified-theme.css?v=' + APP_VERSION;
 const ENHANCE_SRC = '/pulse-enhance.js?v=' + APP_VERSION;
 const ENHANCE_CSS = '/pulse-enhance.css?v=' + APP_VERSION;
