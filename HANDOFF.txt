@@ -195,3 +195,5 @@ END OF HANDOFF
 ================================================================
 
 2026-11-11 wave 4 (nightly): Chrome extension popup (linkedin-pulse-extension/popup.html) LinkedIn blue #0077b5/#005885 -> brand red #FE1B04/#d11200; manifest 1.5.0 -> 1.5.1. Branch nightly/2026-11-11-pulse-extension-red. ❌ merge + Chrome Web Store release (Ariel/Charles). No permissions or code changed.
+
+2026-11-17 Pulse v5.15.3 (nightly): version single source of truth. functions/_version.js exports APP_VERSION; _middleware.js (page stamps) and /api/health both import it (health previously hard-coded 3.0.0; package.json also 3.0.0 -> 5.15.3). Branch nightly/2026-11-17-pulse-version. Merged to main; deploys from main. Live check result recorded in the nightly report. Future bumps: edit functions/_version.js + package.json only.
