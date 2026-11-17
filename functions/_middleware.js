@@ -31,6 +31,7 @@ import {
   findCohostByEmail, isAdminEmail, VIEW_COOKIE, VIEW_DEFAULT,
 } from './_admin.js';
 import { intelInject } from './_intel-inject.js';
+import { APP_VERSION } from './_version.js';
 
 // Paths anyone may reach without a session.
 const PUBLIC_PATHS = new Set([
@@ -243,7 +244,6 @@ async function gate(context) {
 // </head>) to the dashboard - fixed "Open in Sales Nav" links, the rebuilt Reports
 // page and the collapsed Settings > Advanced group. Each is inserted once, only if
 // the page does not already reference it.
-const APP_VERSION = '5.15.2';
 const THEME_HREF = '/unified-theme.css?v=' + APP_VERSION;
 const ENHANCE_SRC = '/pulse-enhance.js?v=' + APP_VERSION;
 const ENHANCE_CSS = '/pulse-enhance.css?v=' + APP_VERSION;
