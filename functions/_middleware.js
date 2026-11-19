@@ -225,7 +225,7 @@ async function gate(context) {
   return new Response(null, { status: 302, headers: { Location: home.toString(), 'Cache-Control': 'no-store' } });
 }
 
-// ── Unified Gershon design (v5.14.0, 2026-10-22) ────────────────────────────────────────────────────────────────────────
+// ── Unified Gershon design (v5.14.0, 2026-10-22) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Decision 2026-10-13: every Gershon app looks like Linalysis (the master design:
 // white 240px sidebar, solid-red active pill, white 12px cards) in the Gershon.ai red
 // #FE1B04. app/unified-theme.css (served at /unified-theme.css, public like every .css)
@@ -249,6 +249,7 @@ const ENHANCE_SRC = '/pulse-enhance.js?v=' + APP_VERSION;
 const ENHANCE_CSS = '/pulse-enhance.css?v=' + APP_VERSION;
 const THEMED_PAGES = new Set(['/', '/index.html', '/app', '/app.html', '/admin', '/admin.html']);
 const DASHBOARD_PAGES = new Set(['/app', '/app.html']);
+const LANDING_PAGES = new Set(['/', '/index.html']);
 const FAVICON_SWAP = ["fill='%230077b5'", "fill='%23FE1B04'"];
 
 function cmpVer(a, b) {
@@ -279,6 +280,16 @@ export function applyUnifiedTheme(html, path) {
     out = out.replace(/(id="footer-status-text">[^<]*<\/span> &middot; v)(\d+\.\d+\.\d+)(<\/div>)/, raiseVer);
     // Settings > About: <label>App Version</label> <input … value="v5.12.0" readonly>
     out = out.replace(/(<label>App Version<\/label>\s*<input type="text" value="v)(\d+\.\d+\.\d+)(")/, raiseVer);
+    // v5.15.4: app naming "<App> by Gershon.AI"
+    out = out.replace('<title>Pulse — Gershon.AI</title>', '<title>Pulse by Gershon.AI</title>');
+  }
+  if (LANDING_PAGES.has(path)) {
+    // v5.15.4: app naming + visible footer version line (same APP_VERSION as /api/health)
+    out = out.replace('<title>Pulse — Never lose', '<title>Pulse by Gershon.AI — Never lose');
+    if (out.indexOf('id="footer-version"') === -1) {
+      out = out.replace('Pulse is not affiliated with or endorsed by LinkedIn.</div>',
+        'Pulse is not affiliated with or endorsed by LinkedIn.<span id="footer-version" style="display:block;margin-top:6px">Pulse by Gershon.AI · v' + APP_VERSION + '</span></div>');
+    }
   }
   return out;
 }
