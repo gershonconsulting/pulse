@@ -12,7 +12,7 @@
     --orange: #d97706; --orange-bg: #fffbeb; --orange-border: #fde68a;
     --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
     --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --muted: #64748b;
-    --border: #e2e8f0; --accent: #0077b5; --accent-dark: #005885;
+    --border: #e2e8f0; --accent: #FE1B04; --accent-dark: #d11200;
     --ink: #0f172a; --ink-dark: #1e293b;
     --sidebar-bg: #ffffff; --sidebar-w: 240px;
     --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -120,7 +120,7 @@
   .field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
   .field .help { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
   .field input, .field select, .field textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 9px; font-size: 13px; font-family: inherit; background: var(--card); color: var(--text); }
-  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,119,181,.12); }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(254,27,4,.12); }
   .field textarea { min-height: 74px; resize: vertical; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -819,7 +819,7 @@ function renderCohosts() {
 
     return '<tr>' +
       '<td><div class="cell-name">' + esc(h.name) + '</div><div class="cell-id">' + esc(h.id) + '</div></td>' +
-      '<td class="hide-sm"><a href="' + esc(h.linkedinUrl) + '" target="_blank" rel="noopener" style="color:#0077b5">' + esc(h.linkedinSlug || '—') + '</a></td>' +
+      '<td class="hide-sm"><a href="' + esc(h.linkedinUrl) + '" target="_blank" rel="noopener" style="color:#d11200">' + esc(h.linkedinSlug || '—') + '</a></td>' +
       '<td class="hide-sm mono">' + (h.email ? esc(h.email) : '<span style="color:var(--muted)">not linked yet</span>') + '</td>' +
       '<td class="nowrap">' + cohostPill(h) + '</td>' +
       '<td class="hide-sm nowrap" style="color:var(--muted)">' + esc(fmtWhen(h.lastSeenAt)) + '</td>' +
@@ -908,11 +908,11 @@ async function deleteCohost(id) {
 /* ══ AUDIT ═════════════════════════════════════════════════════════════════ */
 var ACTION_LABEL = {
   'client.create': ['Created client', '#16a34a'],
-  'client.update': ['Updated client', '#0077b5'],
+  'client.update': ['Updated client', '#FE1B04'],
   'client.delete': ['Deleted client', '#dc2626'],
   'user.add': ['Added user', '#16a34a'],
   'user.remove': ['Removed user', '#dc2626'],
-  'token.issue': ['Issued token', '#0077b5'],
+  'token.issue': ['Issued token', '#FE1B04'],
   'token.rotate': ['Rotated token', '#d97706'],
   'client.self-enroll': ['Self-enrolled', '#16a34a'],
   'cohost.invite': ['Invited CoHost', '#7c3aed'],
@@ -920,7 +920,7 @@ var ACTION_LABEL = {
   'cohost.reissue': ['Re-issued invite', '#d97706'],
   'cohost.revoke': ['Revoked CoHost', '#dc2626'],
   'cohost.restore': ['Restored CoHost', '#16a34a'],
-  'cohost.update': ['Updated CoHost', '#0077b5'],
+  'cohost.update': ['Updated CoHost', '#FE1B04'],
   'cohost.delete': ['Deleted CoHost', '#dc2626'],
 };
 

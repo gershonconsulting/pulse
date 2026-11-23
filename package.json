@@ -1,6 +1,6 @@
 {
   "name": "gershon-pulse",
-  "version": "5.15.4",
+  "version": "5.15.5",
   "private": true,
   "description": "Pulse — LinkedIn Message Triage Dashboard (Cloudflare Pages)",
   "scripts": {
