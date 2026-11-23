@@ -1,7 +1,8 @@
 # pulse (pulse.gershoncrm.com) STATUS
-Updated 2026-11-19 (v5.15.4). Full history: HANDOFF.txt.
+Updated 2026-11-23 (v5.15.5). Full history: HANDOFF.txt.
 
 ## Done
+- ✅ 2026-11-23 v5.15.5: last LinkedIn-blue leftovers -> brand red (focus glows, landing gradient + button shadows, favicons, profile/message link chips, admin colours). Chart literals stay (unified-theme.css recolours them).
 - ✅ 2026-11-19 v5.15.4: naming "Pulse by Gershon.AI" in landing + dashboard titles; landing footer shows "Pulse by Gershon.AI · v<APP_VERSION>" (functions/_middleware.js; HTML files untouched).
 - ✅ 2026-11-16 /api/matrix-stats (feeds the GC Health Client Platform Matrix): Pulse status = collection freshness only. Last scan within 48h = green "<n> convos"; older = orange "no scan for <n>d"; none on record = orange "never scanned". The red (unanswered) conversation count is no longer in the note, so pending messages never turn Pulse orange.
 

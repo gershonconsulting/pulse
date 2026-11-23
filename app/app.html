@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pulse — Gershon.AI</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230077b5'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold' font-family='system-ui'>P</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23FE1B04'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold' font-family='system-ui'>P</text></svg>">
 <style>
   :root {
     --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca;
     --orange: #d97706; --orange-bg: #fffbeb; --orange-border: #fde68a;
     --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
     --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --muted: #64748b;
-    --border: #e2e8f0; --accent: #0077b5; --accent-dark: #005885;
+    --border: #e2e8f0; --accent: #FE1B04; --accent-dark: #d11200;
     --sidebar-bg: #ffffff; --sidebar-w: 240px;
     --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
@@ -231,7 +231,7 @@
 
   .search-box { flex: 1; min-width: 200px; }
   .search-box input { width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }
-  .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,119,181,0.15); }
+  .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(254,27,4,0.15); }
 
   .sort-select, .filter-select { padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; background: var(--card); box-shadow: var(--shadow); cursor: pointer; }
   .sort-select:focus, .filter-select:focus { outline: none; border-color: var(--accent); }
@@ -295,8 +295,8 @@
   .hot-lead-reply:hover { background: var(--accent); color: white; }
   .hot-lead-reply--disabled { color: var(--muted); border-color: var(--border); cursor: default; }
   .hot-lead-reply--disabled:hover { background: transparent; color: var(--muted); }
-  .hot-lead-profile { font-size: 12px; color: #0a66c2; text-decoration: none; font-weight: 600; flex-shrink: 0; padding: 6px 12px; border: 1px solid #0a66c2; border-radius: 6px; }
-  .hot-lead-profile:hover { background: #0a66c2; color: white; }
+  .hot-lead-profile { font-size: 12px; color: #d11200; text-decoration: none; font-weight: 600; flex-shrink: 0; padding: 6px 12px; border: 1px solid #d11200; border-radius: 6px; }
+  .hot-lead-profile:hover { background: #d11200; color: white; }
   .msg-name-link--plain { color: var(--text); cursor: default; }
   .msg-name-link--plain:hover { color: var(--text); text-decoration: none; }
   /* ─── SUGGESTED REPLIES (v5.10.0) ─── */
@@ -324,7 +324,7 @@
   .sugg-copy { flex: 1; background: #7c3aed; color: #fff; border: none; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
   .sugg-copy:hover { background: #6d28d9; }
   .sugg-copy.done { background: var(--green); }
-  .sugg-open { font-size: 12px; font-weight: 600; color: #0a66c2; text-decoration: none; padding: 7px 8px; border: 1px solid #0a66c2; border-radius: 6px; white-space: nowrap; }
+  .sugg-open { font-size: 12px; font-weight: 600; color: #d11200; text-decoration: none; padding: 7px 8px; border: 1px solid #d11200; border-radius: 6px; white-space: nowrap; }
   .sugg-note { font-size: 11px; color: var(--muted); margin-top: 8px; }
   .sugg-loading { font-size: 13px; color: var(--muted); padding: 6px 0; }
   .kb-grid { display: grid; grid-template-columns: 1fr 1fr; }
@@ -345,8 +345,8 @@
   .lib-empty { padding: 20px 24px; color: var(--muted); font-size: 13px; }
   @media (max-width: 800px) { .kb-grid { grid-template-columns: 1fr; } .kb-grid .settings-form-group { border-right: none; } }
 
-  .msg-link-chip { font-size: 11px; color: #0a66c2; text-decoration: none; font-weight: 600; padding: 1px 8px; border: 1px solid #0a66c2; border-radius: 4px; margin-left: 8px; }
-  .msg-link-chip:hover { background: #0a66c2; color: #fff; }
+  .msg-link-chip { font-size: 11px; color: #d11200; text-decoration: none; font-weight: 600; padding: 1px 8px; border: 1px solid #d11200; border-radius: 4px; margin-left: 8px; }
+  .msg-link-chip:hover { background: #d11200; color: #fff; }
   .msg-link-chip--chat { color: var(--accent); border-color: var(--accent); }
   .msg-link-chip--chat:hover { background: var(--accent); color: #fff; }
   .lead-link { color: inherit; text-decoration: none; }
@@ -512,7 +512,7 @@
   .settings-form-group:last-child { border-bottom: none; }
   .settings-form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
   .settings-form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-  .settings-form-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,119,181,0.15); }
+  .settings-form-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(254,27,4,0.15); }
   .settings-form-group .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
   /* Collecting Session radio cards (Settings -> This computer) */
   .radio-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
@@ -521,7 +521,7 @@
                margin-bottom: 0 !important; font-weight: 400 !important; transition: border-color .15s, background .15s; }
   .radio-opt:hover { border-color: var(--accent); }
   .radio-opt input[type="radio"] { width: 16px; height: 16px; margin: 2px 0 0 0; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
-  .radio-opt.checked { border-color: var(--accent); background: rgba(0,119,181,0.06); box-shadow: inset 0 0 0 1px var(--accent); }
+  .radio-opt.checked { border-color: var(--accent); background: rgba(254,27,4,0.06); box-shadow: inset 0 0 0 1px var(--accent); }
   .radio-body { display: flex; flex-direction: column; gap: 3px; }
   .radio-title { font-size: 13px; font-weight: 600; color: var(--text); }
   .radio-sub { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
