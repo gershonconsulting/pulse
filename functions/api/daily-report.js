@@ -34,6 +34,7 @@
 import { json, readData } from './_shared.js';
 import { latestExtVersion, cmpVer } from '../_ext-version.js';
 import { readAdminStore } from '../_admin.js';
+import { renderWeeklyEmail } from '../_weekly-visual.js';
 
 const DEFAULT_TZ = 'America/New_York';
 const PLATFORMS = [
@@ -312,6 +313,40 @@ export function buildReport(data, opts) {
     };
   }
 
+  // --- Per-day activity for the weekly chart (v5.16.0) ---------------------
+  // One bucket per local day of the 7-day window: what moved that day.
+  const dailyActivity = [];
+  for (let i = 6; i >= 0; i--) {
+    const ymd = shiftYmd(dayYmd, -i);
+    const s0 = dayStartMs(ymd, tz);
+    const s1 = dayStartMs(shiftYmd(ymd, 1), tz);
+    const inD = (t) => t !== null && t >= s0 && t < s1;
+    let dh = 0, df = 0;
+    for (const m of messages) {
+      for (const h of m.statusHistory || []) {
+        if (!inD(ts(h.timestamp))) continue;
+        if (h.from === 'Red' && (h.to === 'Green' || h.to === 'Orange')) dh++;
+        else if (h.to === 'Red' && h.from !== 'Red') df++;
+      }
+    }
+    dailyActivity.push({
+      ymd, label: shortDay(ymd, tz),
+      handled: dh, newFires: df,
+      arrivals: messages.filter((m) => inD(ts(m.firstSeenAt))).length,
+      closed: messages.filter((m) => m.done && inD(ts(m.doneAt))).length,
+      synced: scans.some((sc) => inD(ts(sc.timestamp))),
+    });
+  }
+
+  // Live pipeline mix across every tracked conversation (not just the last scan).
+  const mix = { red: 0, orange: 0, green: 0, done: 0 };
+  for (const m of messages) {
+    if (m.done) mix.done++;
+    if (m.status === 'Red' && !m.done) mix.red++;
+    else if (m.status === 'Orange') mix.orange++;
+    else if (m.status === 'Green' || (m.status === 'Red' && m.done)) mix.green++;
+  }
+
   const thisWeek = aggregateWindow(dayYmd, 7);
   const priorWeek = aggregateWindow(shiftYmd(dayYmd, -7), 7);
   const wow = (a, b) => (b === 0 ? (a === 0 ? 0 : null) : Math.round(((a - b) / b) * 100));
@@ -563,6 +598,8 @@ export function buildReport(data, opts) {
       worst: worstCampaign,
       hottestThisWeek,
     },
+    dailyActivity,
+    mix,
     trend: trend.map((d) => ({ ...d, label: shortDay(d.ymd, tz) })),
     trendNote: trend.some((d) => d.partial && d.red !== null)
       ? 'Days marked "partial" only had one of the two inboxes collected, so their totals undercount.'
@@ -1011,7 +1048,7 @@ async function handle(request, env) {
           from: env.EMAIL_FROM || 'Pulse <pulse@gershon.ai>',
           to: t.to,
           subject: row.subject,
-          html: renderEmail(report),
+          html: report.period === 'week' ? renderWeeklyEmail(report) : renderEmail(report),
           text: renderText(report),
         }),
       });
