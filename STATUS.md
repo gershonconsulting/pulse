@@ -3,6 +3,7 @@ Updated 2026-11-25 (v5.16.0). Full history: HANDOFF.txt.
 
 ## Done
 - ✅ 2026-11-25 v5.16.0: Monday weekly report redesigned as a one-page visual email (functions/_weekly-visual.js): KPI tiles with week-over-week, pipeline mix bar, 7-day collection dots, daily activity columns, pipeline-by-day stacked columns, week-vs-week bars, campaign leaderboard, top 5 waiting on you. Table-based charts (Gmail/Outlook safe). Daily digest unchanged.
+- ✅ 2026-11-25 v5.16.0 polish (same PR #14): two-column chart rows stack on phones (@media max-width:480px; 390px scrollWidth 519 -> 390); verdict line uses the live un-ticked Red count like the header/tiles; new plain-text weekly part (renderWeeklyText).
 - ✅ 2026-11-23 v5.15.5: last LinkedIn-blue leftovers -> brand red (focus glows, landing gradient + button shadows, favicons, profile/message link chips, admin colours). Chart literals stay (unified-theme.css recolours them).
 - ✅ 2026-11-19 v5.15.4: naming "Pulse by Gershon.AI" in landing + dashboard titles; landing footer shows "Pulse by Gershon.AI · v<APP_VERSION>" (functions/_middleware.js; HTML files untouched).
 - ✅ 2026-11-16 /api/matrix-stats (feeds the GC Health Client Platform Matrix): Pulse status = collection freshness only. Last scan within 48h = green "<n> convos"; older = orange "no scan for <n>d"; none on record = orange "never scanned". The red (unanswered) conversation count is no longer in the note, so pending messages never turn Pulse orange.

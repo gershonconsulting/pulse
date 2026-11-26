@@ -34,7 +34,7 @@
 import { json, readData } from './_shared.js';
 import { latestExtVersion, cmpVer } from '../_ext-version.js';
 import { readAdminStore } from '../_admin.js';
-import { renderWeeklyEmail } from '../_weekly-visual.js';
+import { renderWeeklyEmail, renderWeeklyText } from '../_weekly-visual.js';
 
 const DEFAULT_TZ = 'America/New_York';
 const PLATFORMS = [
@@ -351,6 +351,10 @@ export function buildReport(data, opts) {
   const priorWeek = aggregateWindow(shiftYmd(dayYmd, -7), 7);
   const wow = (a, b) => (b === 0 ? (a === 0 ? 0 : null) : Math.round(((a - b) / b) * 100));
 
+  // The verdict's "needing action" number uses the same live source as the header
+  // and KPI tiles (un-ticked Red conversations), so the email never shows two
+  // different backlog counts. The week-over-week delta itself stays scan-measured.
+  const liveRed = followUpNeeded.length;
   let weekVerdict;
   if (thisWeek.collectedDays === 0) {
     weekVerdict = { tone: 'critical', headline: 'Nothing collected in the last 7 days', detail: 'Pulse has not recorded a single sync this week, so no week-over-week comparison exists.' };
@@ -361,11 +365,11 @@ export function buildReport(data, opts) {
       detail: `Only ${thisWeek.collectedDays} of 7 days collected, and fewer than two of them covered both inboxes. ${thisWeek.handled} handled and ${thisWeek.newFires} new fires were still recorded, but the backlog cannot be compared across the week.`,
     };
   } else if (thisWeek.backlogDelta < 0) {
-    weekVerdict = { tone: 'good', headline: `Yes — backlog down ${Math.abs(thisWeek.backlogDelta)} over the week`, detail: `${thisWeek.backlogStart} → ${thisWeek.backlogEnd} needing action (${thisWeek.backlogFrom} → ${thisWeek.backlogTo}). ${thisWeek.handled} handled against ${thisWeek.newFires} new fires.` };
+    weekVerdict = { tone: 'good', headline: `Yes — backlog down ${Math.abs(thisWeek.backlogDelta)} over the week`, detail: `${liveRed} waiting on you now. ${thisWeek.handled} handled against ${thisWeek.newFires} new fires (${thisWeek.backlogFrom} → ${thisWeek.backlogTo}).` };
   } else if (thisWeek.backlogDelta === 0) {
-    weekVerdict = { tone: 'neutral', headline: 'Flat week — backlog unchanged', detail: `Still ${thisWeek.backlogEnd} needing action. ${thisWeek.handled} handled, ${thisWeek.newFires} new — they cancelled out.` };
+    weekVerdict = { tone: 'neutral', headline: 'Flat week — backlog unchanged', detail: `Still ${liveRed} waiting on you. ${thisWeek.handled} handled, ${thisWeek.newFires} new — they cancelled out.` };
   } else {
-    weekVerdict = { tone: 'bad', headline: `Backlog grew ${thisWeek.backlogDelta} over the week`, detail: `${thisWeek.backlogStart} → ${thisWeek.backlogEnd} needing action. ${thisWeek.newFires} new fires against ${thisWeek.handled} handled.` };
+    weekVerdict = { tone: 'bad', headline: `Backlog grew ${thisWeek.backlogDelta} over the week`, detail: `${liveRed} waiting on you now. ${thisWeek.newFires} new fires against ${thisWeek.handled} handled.` };
   }
 
   // --- Campaign performance ------------------------------------------------
@@ -534,7 +538,7 @@ export function buildReport(data, opts) {
     {
       q: 'Was progress made since last week?',
       tone: weekVerdict.tone,
-      answer: weekVerdict.headline.replace(/&mdash;/g, '\u2014'),
+      answer: weekVerdict.headline.replace(/&mdash;/g, '—'),
       detail: `${thisWeek.handled} handled vs ${priorWeek.handled} the week before &middot; ${thisWeek.arrivals} new conversations vs ${priorWeek.arrivals} &middot; ${thisWeek.collectedDays}/7 days collected.`,
     },
     {
@@ -1049,7 +1053,7 @@ async function handle(request, env) {
           to: t.to,
           subject: row.subject,
           html: report.period === 'week' ? renderWeeklyEmail(report) : renderEmail(report),
-          text: renderText(report),
+          text: report.period === 'week' ? renderWeeklyText(report) : renderText(report),
         }),
       });
       if (res.ok) {

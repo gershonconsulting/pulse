@@ -56,9 +56,13 @@ function card(title, inner, accent, sub) {
 function row1(cell) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;margin-top:12px;"><tr>${cell}</tr></table>`;
 }
+// Two cards side by side on desktop; on phones (<=480px) the @media rule in the
+// <head> turns each cell into a full-width block so the pair stacks. Clients that
+// ignore <style> keep the 50/50 layout, which still fits thanks to the fluid widths.
 function row2(a, b) {
+  const col = (c) => c.replace('<td ', '<td width="49%" class="pw-col" ').replace('style="', 'style="max-width:320px;');
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;margin-top:12px;"><tr>
-    ${a.replace('<td ', '<td width="50%" ')}<td width="12" style="width:12px;"></td>${b.replace('<td ', '<td width="50%" ')}
+    ${col(a)}<td width="12" class="pw-gap" style="width:12px;"></td>${col(b).replace('class="pw-col"', 'class="pw-col pw-col2"')}
   </tr></table>`;
 }
 
@@ -74,7 +78,7 @@ function kpiTiles(r) {
   const w = r.week, pw = r.priorWeek, wow = r.weekOverWeek;
   const tile = (val, label, prev, delta, goodUp, color, tint) => `<td width="25%" valign="top" style="padding:0 4px;">
       <div style="background:${tint};border-radius:12px;padding:14px 10px;text-align:center;border-top:4px solid ${color};">
-        <div style="font-size:30px;font-weight:800;color:${color};line-height:1;">${val}</div>
+        <div class="pw-kpi" style="font-size:30px;font-weight:800;color:${color};line-height:1;">${val}</div>
         <div style="font-size:11px;font-weight:700;color:${C.ink};margin-top:6px;text-transform:uppercase;letter-spacing:.4px;">${label}</div>
         <div style="margin-top:6px;">${pill(delta, goodUp)}</div>
         <div style="font-size:10px;color:${C.faint};margin-top:4px;">last week ${prev}</div>
@@ -148,11 +152,11 @@ function activityChart(r) {
   const H = 90;
   const max = Math.max(1, ...days.flatMap((d) => [d.handled, d.newFires, d.arrivals]));
   const h = (n) => (n > 0 ? Math.max(3, Math.round((n / max) * H)) : 0);
-  const cols = days.map((d) => `<td valign="bottom" align="center" style="padding:0 3px;">
+  const cols = days.map((d) => `<td valign="bottom" align="center" style="padding:0 2px;">
       <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
-        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.green};font-weight:700;text-align:center;">${d.handled || ''}</div>${block(C.green, 12, h(d.handled), '3px 3px 0 0')}</td>
-        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.red};font-weight:700;text-align:center;">${d.newFires || ''}</div>${block(C.red, 12, h(d.newFires), '3px 3px 0 0')}</td>
-        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.blue};font-weight:700;text-align:center;">${d.arrivals || ''}</div>${block(C.blue, 12, h(d.arrivals), '3px 3px 0 0')}</td>
+        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.green};font-weight:700;text-align:center;">${d.handled || ''}</div>${block(C.green, 10, h(d.handled), '3px 3px 0 0')}</td>
+        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.red};font-weight:700;text-align:center;">${d.newFires || ''}</div>${block(C.red, 10, h(d.newFires), '3px 3px 0 0')}</td>
+        <td valign="bottom" style="padding:0 1px;"><div style="font-size:9px;color:${C.blue};font-weight:700;text-align:center;">${d.arrivals || ''}</div>${block(C.blue, 10, h(d.arrivals), '3px 3px 0 0')}</td>
       </tr></table>
     </td>`).join('');
   const labels = days.map((d) => `<td align="center" style="padding:6px 3px 0;font-size:10px;color:${d.synced ? C.mute : C.red};border-top:2px solid ${C.line};">${esc(String(d.label).split(',')[0])}</td>`).join('');
@@ -189,7 +193,7 @@ function backlogChart(r) {
       <tr style="height:${H + 16}px;">${cols}</tr><tr>${labels}</tr>
     </table>
     <div style="font-size:11px;color:${C.mute};margin-top:8px;"><span style="color:${C.red};">&#9632;</span> Your turn &nbsp;<span style="color:${C.orange};">&#9632;</span> Waiting &nbsp;<span style="color:${C.green};">&#9632;</span> Handled &nbsp;&middot;&nbsp; Backlog <strong style="color:${deltaCol};">${deltaTxt}</strong></div>`;
-  return card('Pipeline by day', inner, C.orange, 'Number on top = conversations waiting on you');
+  return card('Pipeline by day', inner, C.orange, 'Number on top = Red at that day\'s last sync');
 }
 
 // Paired horizontal bars: this week (colour) vs last week (grey).
@@ -233,7 +237,7 @@ function campaignChart(r) {
         <td>${block(col, px, 14, '0 6px 6px 0')}</td>
         <td style="padding-left:8px;font-size:13px;font-weight:800;color:${C.ink};white-space:nowrap;">${x.responseRate}%</td>
       </tr></table></td>
-      <td style="padding:5px 0 5px 8px;font-size:11px;color:${C.mute};white-space:nowrap;text-align:right;">${x.replied}/${x.total} replied${x.repliesThisWeek ? ` &middot; <span style="color:${C.red};font-weight:700;">+${x.repliesThisWeek} this wk</span>` : ''}</td>
+      <td style="padding:5px 0 5px 8px;font-size:11px;color:${C.mute};text-align:right;line-height:1.4;">${x.replied}/${x.total} replied${x.repliesThisWeek ? ` &middot; <span style="color:${C.red};font-weight:700;">+${x.repliesThisWeek} this wk</span>` : ''}</td>
     </tr>`;
   }).join('') : `<tr><td style="font-size:12px;color:${C.mute};">Every campaign is under ${c.minN} contacts &mdash; too small to rank yet.</td></tr>`;
   const note = `Reply rate = contacts who ever replied &divide; contacts reached.${unranked ? ` ${unranked} campaign${unranked === 1 ? '' : 's'} under ${c.minN} contacts not ranked.` : ''}${c.hottestThisWeek ? ` Hottest this week: <strong>${esc(c.hottestThisWeek.name)}</strong> (${c.hottestThisWeek.repliesThisWeek} new replies).` : ''}`;
@@ -277,9 +281,18 @@ export function renderWeeklyEmail(r) {
   const best = r.campaigns.best;
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pulse Weekly Report</title></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pulse Weekly Report</title>
+<style>
+  @media only screen and (max-width:480px) {
+    .pw-col { display:block !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; }
+    .pw-col2 { margin-top:12px !important; }
+    .pw-gap { display:none !important; width:0 !important; }
+    .pw-kpi { font-size:24px !important; }
+    .pw-wrap { padding:14px 10px !important; }
+  }
+</style></head>
 <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${C.ink};">
-<div style="max-width:680px;margin:0 auto;padding:18px 14px;">
+<div class="pw-wrap" style="max-width:680px;margin:0 auto;padding:18px 14px;">
 
   <div style="background:${C.brand};background:linear-gradient(135deg,${C.brand} 0%,${C.brandDark} 60%,#7c0a00 100%);border-radius:14px;padding:20px 22px;color:#fff;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
@@ -317,4 +330,91 @@ export function renderWeeklyEmail(r) {
   </div>
 </div>
 </body></html>`;
+}
+
+// Plain-text twin of renderWeeklyEmail (the text/plain part of the Monday email).
+// Same sections, same numbers, same order as the visual edition.
+function plain(s) {
+  return String(s == null ? '' : s)
+    .replace(/&mdash;/g, '—').replace(/&middot;/g, '·').replace(/&rarr;/g, '→')
+    .replace(/&divide;/g, '÷').replace(/&[a-z#0-9]+;/g, '').replace(/<[^>]+>/g, '');
+}
+function pctTxt(pct) {
+  if (pct === null || pct === undefined) return 'new';
+  if (pct === 0) return '= last wk';
+  return `${pct > 0 ? '+' : '-'}${Math.abs(pct)}%`;
+}
+
+export function renderWeeklyText(r) {
+  const w = r.week, pw = r.priorWeek, wow = r.weekOverWeek || {};
+  const L = [];
+  const day = (d) => String(d.label).split(',')[0];
+  L.push(`PULSE WEEKLY REPORT — ${w.label} (week ending ${r.dayLabel})`);
+  L.push(`${r.standing.followUpNeeded} waiting on you`, '');
+
+  for (const a of r.alerts || []) {
+    L.push(`${a.level === 'critical' ? '!! CRITICAL' : '! WARNING'}: ${plain(a.title)}`, `   What to do: ${plain(a.fix)}`, '');
+  }
+
+  const best = r.campaigns.best;
+  L.push('DID THE WEEK MOVE?', `  ${plain(w.verdict.headline)}`,
+    `  ${plain(w.verdict.detail)}${best ? ` Best campaign: ${best.name} at ${best.responseRate}%.` : ''}`, '');
+
+  L.push('THIS WEEK (vs last week)');
+  L.push(`  Handled            ${w.handled}  (${pctTxt(wow.handled)}, last week ${pw.handled})`);
+  L.push(`  New replies        ${w.newFires}  (${pctTxt(wow.newFires)}, last week ${pw.newFires})`);
+  L.push(`  New conversations  ${w.arrivals}  (${pctTxt(wow.arrivals)}, last week ${pw.arrivals})`);
+  L.push(`  Ticked off         ${w.closed}  (${pctTxt(wow.closed)}, last week ${pw.closed})`, '');
+
+  const m = r.mix || { red: 0, orange: 0, green: 0 };
+  const tot = m.red + m.orange + m.green;
+  const pc = (n) => (tot ? Math.round((n / tot) * 100) : 0);
+  L.push(`PIPELINE RIGHT NOW (${r.standing.totalTracked} tracked)`);
+  L.push(`  Your turn (Red)    ${m.red}  ${pc(m.red)}%`);
+  L.push(`  Waiting / soft no  ${m.orange}  ${pc(m.orange)}%`);
+  L.push(`  Handled (Green)    ${m.green}  ${pc(m.green)}%`, '');
+
+  const ext = r.extension || {};
+  L.push(`COLLECTION HEALTH — ${w.collectedDays}/7 days synced`);
+  const trendBy = Object.fromEntries((r.trend || []).map((d) => [d.ymd, d]));
+  L.push('  ' + (r.dailyActivity || []).map((d) => {
+    const t = trendBy[d.ymd];
+    return `${day(d)} ${!d.synced ? 'no sync' : t && t.partial ? 'one inbox' : 'ok'}`;
+  }).join(' · '));
+  L.push(`  ${ext.outdated ? `Extension v${ext.installed} → v${ext.latest} available` : ext.installed ? `Extension v${ext.installed} · up to date` : 'Extension version unknown'}`, '');
+
+  L.push('DAILY ACTIVITY (handled / new replies / new conversations)');
+  for (const d of r.dailyActivity || []) L.push(`  ${day(d).padEnd(4)} ${d.handled} / ${d.newFires} / ${d.arrivals}${d.synced ? '' : '  (no sync)'}`);
+  L.push('');
+
+  L.push('PIPELINE BY DAY (Red / Orange / Green at last sync)');
+  for (const d of r.trend || []) {
+    L.push(`  ${day(d).padEnd(4)} ${d.red === null ? 'no sync' : `${d.red} / ${d.orange} / ${d.green}${d.partial ? '  (partial)' : ''}`}`);
+  }
+  const delta = w.backlogDelta;
+  L.push(`  Backlog ${delta === null ? 'not comparable' : delta === 0 ? 'unchanged' : `${delta < 0 ? 'down' : 'up'} ${Math.abs(delta)} over the week`}`, '');
+
+  L.push('CAMPAIGN LEADERBOARD');
+  const c = r.campaigns;
+  if (!c.all.length) L.push('  No campaign codes detected yet.');
+  else {
+    const ranked = c.all.filter((x) => x.ranked).slice(0, 6);
+    if (!ranked.length) L.push(`  Every campaign is under ${c.minN} contacts — too small to rank yet.`);
+    ranked.forEach((x, i) => L.push(`  ${i + 1}. ${x.name} — ${x.responseRate}% (${x.replied}/${x.total} replied${x.repliesThisWeek ? `, +${x.repliesThisWeek} this wk` : ''})`));
+    const unranked = c.all.length - c.all.filter((x) => x.ranked).length;
+    if (unranked) L.push(`  ${unranked} campaign${unranked === 1 ? '' : 's'} under ${c.minN} contacts not ranked.`);
+  }
+  L.push('');
+
+  const list = (r.standing.followUps || []).slice(0, 5);
+  L.push(`WAITING ON YOU · ${r.standing.followUpNeeded}`);
+  if (!list.length) L.push('  Inbox zero — nobody is waiting on a reply.');
+  for (const f of list) {
+    L.push(`  - ${f.focus ? '* ' : ''}${f.name}${f.campaign ? ` [${f.campaign}]` : ''} (${f.source === 'sales-navigator' ? 'Sales Nav' : 'LinkedIn'})`);
+    if (f.snippet) L.push(`    ${f.snippet.slice(0, 110)}`);
+  }
+  const more = r.standing.followUpNeeded - list.length;
+  if (more > 0) L.push(`  + ${more} more on the dashboard`);
+  L.push('', 'Open Pulse Dashboard: https://pulse.gershoncrm.com/app.html', `Times in ${r.tz}.`);
+  return L.join('\n');
 }
